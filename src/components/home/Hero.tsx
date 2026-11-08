@@ -1,237 +1,178 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowUpRight,
+  Briefcase,
+  Building2,
+  Gift,
   MapPin,
   Search,
-  Sparkles,
-  TrendingUp,
+  Star,
+  Users,
 } from "lucide-react";
 
 import globe from "@/images/globe.png";
-import { Button } from "@/components/ui/button";
 
-const popularSearches = [
-  "Product Design",
-  "Engineering",
-  "Marketing",
-  "Remote",
-];
-
-const featuredJobs = [
-  {
-    role: "Senior Product Designer",
-    company: "Northstar",
-    location: "Remote",
-    salary: "$140k – $180k",
-    initials: "N",
-    avatar: "bg-indigo-500/15 text-indigo-300",
-    badge: "New",
-  },
-  {
-    role: "Frontend Engineer",
-    company: "Orbit",
-    location: "Hybrid · Berlin",
-    salary: "$120k – $160k",
-    initials: "O",
-    avatar: "bg-orange-500/15 text-orange-300",
-    badge: "2d",
-  },
+const trendingPositions = [
+  "Product Designer",
+  "AI Engineering",
+  "Dev-ops Engineer",
 ];
 
 const stats = [
-  { value: "12k+", label: "Open roles" },
-  { value: "3.2k+", label: "Hiring teams" },
-  { value: "87%", label: "Match rate" },
+  { icon: Briefcase, value: "50K", label: "Active jobs" },
+  { icon: Building2, value: "12K", label: "Companies" },
+  { icon: Users, value: "2M", label: "Job Seekers" },
+  { icon: Star, value: "97%", label: "Satisfaction Rate" },
 ];
 
 const HeroSection = () => {
   return (
     <section className="relative isolate overflow-hidden bg-[#0a0a0a] text-white">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-40 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[130px]" />
-        <div className="absolute -right-32 top-1/3 h-[360px] w-[360px] rounded-full bg-orange-500/10 blur-[120px]" />
-        <div className="absolute -left-40 bottom-0 h-[320px] w-[320px] rounded-full bg-blue-500/10 blur-[120px]" />
+        <div className="absolute left-1/2 top-0 h-[560px] w-[900px] -translate-x-1/2 rounded-full bg-indigo-600/15 blur-[150px]" />
+        <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-white/[0.04] to-transparent" />
       </div>
 
-      <div className="relative mx-auto grid w-full max-w-[1240px] items-center gap-14 px-4 pb-20 pt-14 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8 lg:px-8 lg:pb-28 lg:pt-24">
-        <div className="text-center lg:text-left">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-zinc-300">
-            <span className="relative flex size-1.5">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex size-1.5 rounded-full bg-emerald-400" />
-            </span>
-            New roles added every day
-          </span>
+      <div className="relative mx-auto w-full max-w-[1440px] px-4 pb-14 pt-10 sm:px-6 lg:px-8 lg:pb-20 lg:pt-14">
+        <div className="mx-auto max-w-3xl text-center">
+          <div className="flex items-center justify-center gap-3 sm:gap-5">
+            <span
+              aria-hidden="true"
+              className="hidden h-px w-10 bg-gradient-to-r from-transparent to-white/25 sm:block sm:w-20"
+            />
+            <p className="flex items-center gap-2 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.12em] sm:text-xs sm:tracking-[0.18em]">
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-[6px] bg-orange-500/15">
+                <Gift className="size-3 text-orange-400" strokeWidth={2} />
+              </span>
+              <span className="font-semibold text-orange-400">59,999+</span>
+              <span className="text-zinc-300">New jobs this month</span>
+            </p>
+            <span
+              aria-hidden="true"
+              className="hidden h-px w-10 bg-gradient-to-l from-transparent to-white/25 sm:block sm:w-20"
+            />
+          </div>
 
-          <h1 className="mt-6 text-balance text-4xl font-semibold leading-[1.04] tracking-[-0.04em] sm:text-5xl lg:text-6xl xl:text-[68px]">
-            Find work that{" "}
-            <span className="bg-gradient-to-r from-indigo-400 via-sky-400 to-orange-400 bg-clip-text text-transparent">
-              fits your life
-            </span>
-            .
+          <h1 className="mt-8 text-balance text-4xl font-bold leading-[1.08] tracking-[-0.035em] sm:text-[44px] lg:text-[56px]">
+            Find Your Dream Job Today
           </h1>
 
-          <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-zinc-400 sm:text-lg lg:mx-0">
-            Discover roles at companies that value what you bring. Search
-            smarter, apply faster, and land your next opportunity with
-            hireloop.
+          <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
+            HireLoop connects top talent with world-class companies. Browse
+            thousands of curated opportunities and land your next role – faster.
           </p>
 
           <form
             action="/jobs"
             method="get"
-            className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-2 backdrop-blur-xl"
+            className="mx-auto mt-8 w-full max-w-[800px]"
           >
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:flex-col lg:items-stretch xl:flex-row xl:items-center">
+            <div className="flex flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.04] p-2 backdrop-blur-xl transition-colors focus-within:border-white/20 sm:flex-row sm:items-center sm:rounded-full sm:pl-4">
               <label
                 htmlFor="hero-search"
-                className="flex flex-1 items-center gap-3 rounded-xl px-4 transition-colors focus-within:bg-white/[0.06]"
+                className="flex flex-1 items-center gap-2.5 rounded-xl px-3 py-2 transition-colors focus-within:bg-white/[0.04] sm:rounded-full sm:py-0"
               >
-                <Search className="size-5 shrink-0 text-zinc-500" />
-                <span className="sr-only">Job title or keyword</span>
+                <Search className="size-4 shrink-0 text-zinc-500" />
+                <span className="sr-only">Job title, skill or company</span>
                 <input
                   id="hero-search"
                   name="q"
                   type="search"
-                  placeholder="Job title or keyword"
-                  className="h-12 w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
+                  placeholder="Job title, skill or company"
+                  className="h-9 w-full min-w-0 bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
                 />
               </label>
 
               <span
                 aria-hidden="true"
-                className="hidden h-8 w-px bg-white/10 sm:block lg:hidden xl:block"
+                className="mx-3 h-px shrink-0 bg-white/10 sm:mx-0 sm:h-6 sm:w-px"
               />
 
               <label
                 htmlFor="hero-location"
-                className="flex flex-1 items-center gap-3 rounded-xl px-4 transition-colors focus-within:bg-white/[0.06]"
+                className="flex flex-1 items-center gap-2.5 rounded-xl px-3 py-2 transition-colors focus-within:bg-white/[0.04] sm:rounded-full sm:py-0"
               >
-                <MapPin className="size-5 shrink-0 text-zinc-500" />
-                <span className="sr-only">Location</span>
+                <MapPin className="size-4 shrink-0 text-zinc-500" />
+                <span className="sr-only">Location or Remote</span>
                 <input
                   id="hero-location"
                   name="location"
                   type="text"
-                  placeholder="Location"
-                  className="h-12 w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
+                  placeholder="Location or Remote"
+                  className="h-9 w-full min-w-0 bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
                 />
               </label>
 
-              <Button
+              <button
                 type="submit"
-                size="lg"
-                className="h-12 w-full rounded-xl! bg-indigo-600! px-6 text-sm font-semibold text-white! hover:bg-indigo-500! sm:w-auto lg:w-full xl:w-auto"
+                aria-label="Search jobs"
+                className="flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:size-11 sm:w-11 sm:rounded-xl"
               >
-                Search jobs
-              </Button>
+                <Search className="size-4 sm:hidden" />
+                <span className="sm:hidden">Search jobs</span>
+                <Search className="hidden size-4 sm:block" />
+              </button>
             </div>
           </form>
 
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
-            <span className="text-xs text-zinc-500">Popular:</span>
-            {popularSearches.map((term) => (
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <span className="text-[11px] text-zinc-500">
+              Trending Position
+            </span>
+            {trendingPositions.map((position) => (
               <Link
-                key={term}
-                href={`/jobs?q=${encodeURIComponent(term)}`}
-                className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-400 transition-colors hover:border-white/25 hover:text-white"
+                key={position}
+                href={`/jobs?q=${encodeURIComponent(position)}`}
+                className="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-[11px] text-zinc-300 transition-colors hover:border-white/25 hover:text-white"
               >
-                {term}
+                {position}
               </Link>
             ))}
           </div>
-
-          <dl className="mx-auto mt-10 grid max-w-md grid-cols-3 gap-4 border-t border-white/10 pt-6 lg:mx-0">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center lg:text-left">
-                <dt className="sr-only">{stat.label}</dt>
-                <dd className="text-2xl font-semibold tracking-tight text-white">
-                  {stat.value}
-                </dd>
-                <dd className="mt-1 text-xs text-zinc-500">{stat.label}</dd>
-              </div>
-            ))}
-          </dl>
         </div>
 
-        <div
-          aria-hidden="true"
-          className="relative mx-auto w-full max-w-[520px] lg:max-w-none"
-        >
-          <div className="relative mx-auto aspect-[4/5] w-full max-w-[500px]">
-            <div className="absolute inset-x-12 bottom-10 top-1/4 rounded-full bg-indigo-600/20 blur-[100px]" />
-            <Image
-              src={globe}
-              alt=""
-              fill
-              priority
-              sizes="(min-width: 1024px) 45vw, 90vw"
-              className="object-contain object-bottom [mask-image:radial-gradient(ellipse_75%_70%_at_50%_60%,black_55%,transparent_100%)]"
-            />
+        <div className="relative mt-8 lg:mt-10">
+          <div className="relative mx-auto w-full max-w-[1120px]">
+            <div className="relative aspect-square overflow-hidden sm:aspect-[16/10] lg:aspect-[16/9]">
+              <Image
+                src={globe}
+                alt=""
+                fill
+                priority
+                sizes="(min-width: 1280px) 1120px, 100vw"
+                className="object-cover object-center [mask-image:linear-gradient(to_bottom,transparent_0%,black_20%)]"
+              />
 
-            <div className="absolute left-0 top-12 w-[235px] rounded-2xl border border-white/10 bg-[#151515]/90 p-4 shadow-[0_24px_70px_-24px_rgba(0,0,0,0.9)] backdrop-blur-xl sm:w-[255px]">
-              <div className="flex items-start gap-3">
-                <span
-                  className={`flex size-9 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${featuredJobs[0].avatar}`}
-                >
-                  {featuredJobs[0].initials}
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-[13px] font-medium text-white">
-                    {featuredJobs[0].role}
-                  </p>
-                  <p className="mt-0.5 truncate text-[11px] text-zinc-500">
-                    {featuredJobs[0].company} · {featuredJobs[0].location}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-3">
-                <span className="text-[11px] text-zinc-400">
-                  {featuredJobs[0].salary}
-                </span>
-                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
-                  {featuredJobs[0].badge}
-                </span>
-              </div>
-            </div>
-
-            <div className="absolute -right-2 top-1/2 hidden w-[250px] rounded-2xl border border-white/10 bg-[#151515]/90 p-4 shadow-[0_24px_70px_-24px_rgba(0,0,0,0.9)] backdrop-blur-xl sm:block">
-              <div className="flex items-start gap-3">
-                <span
-                  className={`flex size-9 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${featuredJobs[1].avatar}`}
-                >
-                  {featuredJobs[1].initials}
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-[13px] font-medium text-white">
-                    {featuredJobs[1].role}
-                  </p>
-                  <p className="mt-0.5 truncate text-[11px] text-zinc-500">
-                    {featuredJobs[1].company} · {featuredJobs[1].location}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-3">
-                <span className="text-[11px] text-zinc-400">
-                  {featuredJobs[1].salary}
-                </span>
-                <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] font-medium text-zinc-400">
-                  {featuredJobs[1].badge}
-                </span>
-              </div>
-            </div>
-
-            <div className="absolute bottom-10 left-8 hidden items-center gap-2 rounded-full border border-white/10 bg-[#151515]/90 px-3.5 py-2 text-xs font-medium text-zinc-300 shadow-xl backdrop-blur-xl lg:flex">
-              <TrendingUp className="size-3.5 text-emerald-400" />
-              92% profile match
+              <p className="absolute inset-x-0 bottom-[20%] z-10 px-4 text-center text-lg font-semibold leading-snug tracking-[-0.01em] text-white/90 drop-shadow-[0_2px_24px_rgba(0,0,0,0.65)] sm:px-6 sm:text-2xl lg:text-[32px]">
+                Assisting over 15,000 job seekers
+                <br className="hidden sm:block" /> find their dream positions.
+              </p>
             </div>
           </div>
 
-          <div className="absolute right-4 top-6 hidden items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-zinc-300 backdrop-blur-md sm:flex">
-            <Sparkles className="size-3.5 text-indigo-400" />
-            Curated for you
-            <ArrowUpRight className="size-3 text-zinc-500" />
+          <div className="relative z-10 -mt-12 grid grid-cols-2 gap-3 sm:-mt-16 lg:-mt-24 lg:grid-cols-4 lg:gap-5">
+            {stats.map((stat) => {
+              const Icon = stat.icon;
+
+              return (
+                <div
+                  key={stat.label}
+                  className="flex min-h-[150px] flex-col rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.015] p-5 backdrop-blur-md lg:min-h-[230px] lg:p-6"
+                >
+                  <Icon
+                    className="size-5 text-zinc-300"
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                  />
+                  <p className="mt-auto text-3xl font-semibold tracking-tight text-white lg:text-5xl">
+                    {stat.value}
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-400 lg:mt-2 lg:text-sm">
+                    {stat.label}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -240,3 +181,4 @@ const HeroSection = () => {
 };
 
 export default HeroSection;
+
