@@ -14,7 +14,6 @@ import {
 import { usePathname } from "next/navigation"
 
 import { useSession } from "@/lib/auth-client"
-import { isDashboardRole, type DashboardRole } from "@/lib/roles"
 import {
   Sidebar,
   SidebarContent,
@@ -25,6 +24,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+
+export type DashboardRole = "seeker" | "recruiter" | "admin"
 
 export type DashboardMenuItem = {
   id: string
@@ -144,17 +145,19 @@ export const menuItemsByRole: Record<DashboardRole, DashboardMenuItem[]> = {
   ],
 }
 
+const isDashboardRole = (
+  value: string | null | undefined,
+): value is DashboardRole =>
+  value === "seeker" || value === "recruiter" || value === "admin"
+
 export function DashboardSidebar() {
   const { data: session } = useSession()
   const pathname = usePathname()
 
   const sessionRole = session?.user?.role
-  const routeRole = pathname.split("/")[2]
-  const role: DashboardRole = isDashboardRole(routeRole)
-    ? routeRole
-    : isDashboardRole(sessionRole)
-      ? sessionRole
-      : "seeker"
+  const role: DashboardRole = isDashboardRole(sessionRole)
+    ? sessionRole
+    : "seeker"
 
   return (
     <Sidebar>
