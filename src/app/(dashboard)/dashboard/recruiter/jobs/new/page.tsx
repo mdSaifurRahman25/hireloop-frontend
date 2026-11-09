@@ -1,9 +1,461 @@
-import React from 'react'
+"use client";
 
-const NewJobPage = () => {
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import {
+  ArrowRight,
+  Building2,
+  CalendarDays,
+  ChevronDown,
+  ChevronRight,
+  DollarSign,
+  Globe,
+  MapPin,
+  X,
+} from "lucide-react";
+import { cn } from "cn";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+const JOB_TYPES = ["Full-time", "Part-time", "Contract", "Internship"] as const;
+
+const JOB_CATEGORIES = [
+  "Engineering & Tech",
+  "Design",
+  "Product",
+  "Marketing",
+  "Sales",
+  "Operations",
+  "Finance",
+  "Customer Support",
+];
+const FREQUENCIES = ["per hour", "per day", "per month", "per year"];
+
+const inputIcon =
+  "pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-zinc-500";
+
+function FieldLabel({
+  htmlFor,
+  id,
+  children,
+  required,
+  hint,
+}: {
+  htmlFor?: string;
+  id?: string;
+  children: React.ReactNode;
+  required?: boolean;
+  hint?: React.ReactNode;
+}) {
+  const labelClassName = "text-sm font-medium text-zinc-200";
+  const content = (
+    <>
+      {children}
+      {required ? (
+        <span aria-hidden="true" className="ml-1 text-indigo-400">
+          *
+        </span>
+      ) : null}
+    </>
+  );
+
   return (
-    <div>NewJobPage</div>
-  )
+    <div className="mb-2 flex items-center justify-between gap-3">
+      {htmlFor ? (
+        <label htmlFor={htmlFor} className={labelClassName}>
+          {content}
+        </label>
+      ) : (
+        <span id={id} className={labelClassName}>
+          {content}
+        </span>
+      )}
+      {hint}
+    </div>
+  );
 }
 
-export default NewJobPage
+function SelectField({
+  id,
+  name,
+  options,
+  defaultValue,
+}: {
+  id: string;
+  name: string;
+  options: readonly string[];
+  defaultValue?: string;
+}) {
+  return (
+    <div className="relative">
+      <select
+        id={id}
+        name={name}
+        defaultValue={defaultValue}
+        className="h-11 w-full appearance-none rounded-xl border border-white/10 bg-white/[0.04] px-4 pr-10 text-[15px] text-white outline-none transition-colors focus-visible:border-indigo-500/60 focus-visible:ring-2 focus-visible:ring-indigo-500/20"
+      >
+        {options.map((option) => (
+          <option
+            key={option}
+            value={option}
+            className="bg-[#141414] text-white"
+          >
+            {option}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-zinc-500" />
+    </div>
+  );
+}
+
+function SectionHeading({
+  step,
+  children,
+}: {
+  step: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <h2 className="flex items-center gap-2.5 text-[17px] font-semibold text-white">
+      <span
+        aria-hidden="true"
+        className="size-1.5 rounded-full bg-indigo-500"
+      />
+      <span>
+        {step}. {children}
+      </span>
+    </h2>
+  );
+}; 
+
+const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+
+  const formData = new FormData(e.currentTarget);
+  const data = Object.fromEntries(formData.entries());
+
+  // Every FormData value is a string, so convert the ones the API will need.
+  console.log(
+    {
+      ...data,
+      isRemote: data.isRemote === "true",
+      deadline: data.deadline || null,
+      minSalary: data.minSalary ? Number(data.minSalary) : null,
+      maxSalary: data.maxSalary ? Number(data.maxSalary) : null,
+    },
+    "from new job page.",
+  );
+};
+
+const NewJobPage = () => {
+  const [title, setTitle] = useState("");
+  const [jobType, setJobType] =
+    useState<(typeof JOB_TYPES)[number]>("Full-time");
+  const [isRemote, setIsRemote] = useState(true);
+  const deadlineRef = useRef<HTMLInputElement>(null);
+
+  // The earliest selectable deadline is today. This is applied after mount so
+  // the server-rendered HTML never depends on the client's clock/timezone.
+  useEffect(() => {
+    const input = deadlineRef.current;
+    if (!input) return;
+
+    const now = new Date();
+    input.min = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 10);
+  }, []);
+
+  return (
+    <div className="mx-auto w-full max-w-[1080px] pb-12">
+      <nav
+        aria-label="Breadcrumb"
+        className="flex items-center gap-1.5 text-[13px] text-zinc-500"
+      >
+        <Link
+          href="/dashboard/recruiter/jobs"
+          className="transition-colors hover:text-zinc-200"
+        >
+          Manage Jobs
+        </Link>
+        <ChevronRight aria-hidden="true" className="size-3.5" />
+        <span className="text-zinc-400">Create New Listing</span>
+      </nav>
+
+      <div className="mt-3 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-start">
+        <div>
+          <h1 className="font-heading text-[30px] leading-tight font-semibold tracking-tight text-white sm:text-[36px]">
+            Post a New Job
+          </h1>
+          <p className="mt-2 max-w-xl text-[15px] text-zinc-400">
+            Fill in the position specifications to attract qualified talent
+            across our network.
+          </p>
+        </div>
+      </div>
+
+      <form
+        id="new-job-form"
+        className="mt-12 space-y-12"
+        onSubmit={handleFormSubmit}
+      >
+        <section className="space-y-5">
+          <SectionHeading step={1}>Basic Information</SectionHeading>
+
+          <div>
+            <FieldLabel htmlFor="title" required>
+              Job Title
+            </FieldLabel>
+            <div className="relative">
+              <Input
+                id="title"
+                name="title"
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="e.g. Frontend Developer"
+                autoComplete="off"
+                className="pr-10 text-[15px]"
+              />
+              {title ? (
+                <button
+                  type="button"
+                  onClick={() => setTitle("")}
+                  aria-label="Clear job title"
+                  className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1 text-zinc-500 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <X className="size-3.5" />
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <FieldLabel htmlFor="companyName" required>
+                Company Name
+              </FieldLabel>
+              <div className="relative">
+                <Building2 aria-hidden="true" className={inputIcon} />
+                <Input
+                  id="companyName"
+                  name="companyName"
+                  placeholder="e.g. HirePulse Network"
+                  autoComplete="organization"
+                  className="pl-11 text-[15px]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel htmlFor="category" required>
+                Job Category
+              </FieldLabel>
+              <SelectField
+                id="category"
+                name="category"
+                options={JOB_CATEGORIES}
+                defaultValue="Engineering & Tech"
+              />
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel id="jobType-label" required>
+              Job Type
+            </FieldLabel>
+            <div
+              role="group"
+              aria-labelledby="jobType-label"
+              className="grid grid-cols-2 gap-4 sm:grid-cols-4"
+            >
+              {JOB_TYPES.map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  aria-pressed={jobType === type}
+                  onClick={() => setJobType(type)}
+                  className={cn(
+                    "h-11 rounded-xl border text-[15px] font-medium transition-colors",
+                    jobType === type
+                      ? "border-indigo-500/60 bg-indigo-500/10 text-white"
+                      : "border-white/5 bg-white/[0.04] text-zinc-400 hover:bg-white/[0.07] hover:text-zinc-200",
+                  )}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+            <input type="hidden" name="jobType" value={jobType} />
+          </div>
+        </section>
+
+        <section className="space-y-5">
+          <SectionHeading step={2}>
+            Location, Compensation &amp; Timeline
+          </SectionHeading>
+
+          <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/5 bg-white/[0.04] p-4">
+            <div className="flex items-center gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-300 ring-1 ring-indigo-500/30">
+                <Globe aria-hidden="true" className="size-4" />
+              </span>
+              <div>
+                <p className="text-[15px] font-semibold text-white">
+                  Remote Work Allowed{" "}
+                  <span className="font-normal text-zinc-400">(isRemote)</span>
+                </p>
+                <p className="mt-0.5 text-xs text-zinc-400">
+                  Enable worldwide or distributed candidate applications
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isRemote}
+              aria-label="Remote work allowed"
+              onClick={() => setIsRemote((value) => !value)}
+              className={cn(
+                "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+                isRemote ? "bg-zinc-600" : "bg-white/10",
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute top-0.5 left-0.5 size-5 rounded-full bg-white transition-transform",
+                  isRemote && "translate-x-5",
+                )}
+              />
+            </button>
+          </div>
+          <input type="hidden" name="isRemote" value={String(isRemote)} />
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <FieldLabel
+                htmlFor="location"
+                hint={
+                  <span className="text-[11px] text-zinc-500">Required</span>
+                }
+              >
+                Job Location (location)
+              </FieldLabel>
+              <div className="relative">
+                <MapPin aria-hidden="true" className={inputIcon} />
+                <Input
+                  id="location"
+                  name="location"
+                  placeholder="e.g. New York, USA"
+                  autoComplete="off"
+                  className="pl-11 text-[15px]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel htmlFor="deadline">
+                Application Deadline (deadline)
+              </FieldLabel>
+              <div className="relative">
+                <CalendarDays aria-hidden="true" className={inputIcon} />
+                <Input
+                  ref={deadlineRef}
+                  id="deadline"
+                  name="deadline"
+                  type="date"
+                  onClick={(event) => event.currentTarget.showPicker?.()}
+                  className="pl-11 text-[15px] [&::-webkit-calendar-picker-indicator]:hidden"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-3">
+            <div>
+              <FieldLabel htmlFor="minSalary">Min Salary / Rate</FieldLabel>
+              <div className="relative">
+                <DollarSign aria-hidden="true" className={inputIcon} />
+                <Input
+                  id="minSalary"
+                  name="minSalary"
+                  inputMode="decimal"
+                  placeholder="e.g. 25"
+                  className="pl-11 text-[15px]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel htmlFor="maxSalary">Max Salary / Rate</FieldLabel>
+              <div className="relative">
+                <DollarSign aria-hidden="true" className={inputIcon} />
+                <Input
+                  id="maxSalary"
+                  name="maxSalary"
+                  inputMode="decimal"
+                  placeholder="e.g. 40"
+                  className="pl-11 text-[15px]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel htmlFor="frequency">Frequency</FieldLabel>
+              <SelectField
+                id="frequency"
+                name="frequency"
+                options={FREQUENCIES}
+                defaultValue="per hour"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="space-y-5">
+          <SectionHeading step={3}>
+            Responsibilities &amp; Requirements
+          </SectionHeading>
+
+          <div>
+            <FieldLabel htmlFor="responsibilities" required>
+              Key Responsibilities
+            </FieldLabel>
+            <textarea
+              id="responsibilities"
+              name="responsibilities"
+              placeholder="Describe what this role owns day to day, the people it works with, and the outcomes it drives."
+              className="min-h-[104px] w-full resize-y rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-[15px] text-white outline-none transition-colors placeholder:text-zinc-500 focus-visible:border-indigo-500/60 focus-visible:ring-2 focus-visible:ring-indigo-500/20"
+            />
+          </div>
+
+          <div>
+            <FieldLabel htmlFor="qualifications" required>
+              Qualifications &amp; Requirements
+            </FieldLabel>
+            <textarea
+              id="qualifications"
+              name="qualifications"
+              placeholder="List the must-have skills, experience, and tools for this position."
+              className="min-h-[104px] w-full resize-y rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-[15px] text-white outline-none transition-colors placeholder:text-zinc-500 focus-visible:border-indigo-500/60 focus-visible:ring-2 focus-visible:ring-indigo-500/20"
+            />
+          </div>
+        </section>
+        <section>
+          <Button
+            type="submit"
+            form="new-job-form"
+            className="h-10 w-full rounded-full bg-indigo-600 px-7 text-[15px] font-semibold text-white hover:bg-indigo-500 sm:w-auto [&_svg:not([class*='size-'])]:size-4"
+          >
+            Publish Job
+            <ArrowRight aria-hidden="true" />
+          </Button>
+        </section>
+      </form>
+    </div>
+  );
+};
+
+export default NewJobPage;
