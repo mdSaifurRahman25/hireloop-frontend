@@ -7,6 +7,7 @@ import {
   Building2,
   FileText,
   LayoutDashboard,
+  PlusCircle,
   Settings,
   Users,
   Wallet,
@@ -24,6 +25,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import Link from "next/link"
 
 export type DashboardRole = "seeker" | "recruiter" | "admin"
 
@@ -85,6 +87,12 @@ export const menuItemsByRole: Record<DashboardRole, DashboardMenuItem[]> = {
       name: "Dashboard",
       url: "/dashboard/recruiter",
       icon: LayoutDashboard,
+    },
+    {
+      id: "add-jobs",
+      name: "Add Jobs",
+      url: "/dashboard/recruiter/jobs/new",
+      icon: PlusCircle,
     },
     {
       id: "recruiter-jobs",
@@ -159,21 +167,30 @@ export function DashboardSidebar() {
     ? sessionRole
     : "seeker"
 
+  const items = menuItemsByRole[role]
+  const dashboardUrl = `/dashboard/${role}`
+  // The deepest matching link wins, so /dashboard/recruiter/jobs/new highlights
+  // "Add Jobs" without also highlighting "Manage Jobs".
+  const activeUrl = items
+    .map((item) => item.url)
+    .filter(
+      (url) =>
+        pathname === url ||
+        (url !== dashboardUrl && pathname.startsWith(`${url}/`)),
+    )
+    .sort((a, b) => b.length - a.length)[0]
+
   return (
     <Sidebar>
       <SidebarHeader />
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
-            {menuItemsByRole[role].map((item) => (
+            {items.map((item) => (
               <SidebarMenuItem key={item.id}>
                 <SidebarMenuButton
-                  isActive={
-                    pathname === item.url ||
-                    (item.url !== `/dashboard/${role}` &&
-                      pathname.startsWith(`${item.url}/`))
-                  }
-                  render={<a href={item.url} />}
+                  isActive={item.url === activeUrl}
+                  render={<Link href={item.url} />}
                 >
                   <item.icon />
                   <span>{item.name}</span>

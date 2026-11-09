@@ -13,12 +13,6 @@ import UserMenu from "@/components/shared/user-menu";
 import { useSignOut } from "@/hooks/use-sign-out";
 import { authClient } from "@/lib/auth-client";
 
-const navLinks = [
-  { label: "Browse Jobs", href: "/jobs" },
-  { label: "Company", href: "/company" },
-  { label: "Pricing", href: "/pricing" },
-];
-
 const getInitials = (name: string) =>
   name
     .split(/\s+/)
@@ -36,6 +30,15 @@ const Navbar = () => {
 
   const user = session?.user;
   //   console.log(user, "from navbar user.");
+
+  const navLinks = [
+    { label: "Browse Jobs", href: "/jobs" },
+    { label: "Company", href: "/company" },
+    { label: "Pricing", href: "/pricing" },
+    ...(user
+      ? [{ label: "Dashboard", href: `/dashboard/${user.role ?? "seeker"}` }]
+      : []),
+  ];
 
   useEffect(() => {
     if (!open) return;
@@ -86,11 +89,7 @@ const Navbar = () => {
           {isPending ? (
             <div className="size-10 animate-pulse rounded-full bg-white/10" />
           ) : user ? (
-            <UserMenu
-              name={user.name}
-              email={user.email}
-              image={user.image}
-            />
+            <UserMenu name={user.name} email={user.email} image={user.image} />
           ) : (
             <>
               <span aria-hidden="true" className="h-7 w-px bg-white/15" />
@@ -167,7 +166,9 @@ const Navbar = () => {
               <>
                 <div className="flex items-center gap-3 rounded-xl bg-white/5 px-3 py-2.5">
                   <Avatar className="size-9 border border-white/10">
-                    {user.image ? <AvatarImage src={user.image} alt="" /> : null}
+                    {user.image ? (
+                      <AvatarImage src={user.image} alt="" />
+                    ) : null}
                     <AvatarFallback className="bg-indigo-500/15 text-xs font-semibold text-indigo-200">
                       {getInitials(user.name)}
                     </AvatarFallback>
