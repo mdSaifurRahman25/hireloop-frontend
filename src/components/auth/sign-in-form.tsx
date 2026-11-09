@@ -6,11 +6,18 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PasswordInput from "@/components/auth/password-input";
+import RoleSelector, {
+  roleLabel,
+  type Role,
+} from "@/components/auth/role-selector";
+import SocialAuth from "@/components/auth/social-auth";
 import { authClient } from "@/lib/auth-client";
 
 const SignInForm = () => {
   const router = useRouter();
 
+  // Which kind of account the visitor is signing in to
+  const [role, setRole] = useState<Role>("seeker");
   // Error message from the server, e.g. "Invalid email or password"
   const [error, setError] = useState<string | null>(null);
   // Disables the button while the request is running
@@ -45,12 +52,33 @@ const SignInForm = () => {
       return;
     }
 
+    // better-auth signs in by email + password only and ignores extra fields,
+    // so the role saved on the account is the source of truth. Compare it with
+    // the picker to catch a wrong selection instead of landing in the wrong app.
+    const accountRole = data?.user?.role as Role | undefined;
+
+    if (accountRole && accountRole !== role) {
+      await authClient.signOut();
+      setError(
+        `This email is registered as a ${roleLabel(accountRole)}. Pick ${roleLabel(accountRole)} above to continue.`,
+      );
+      return;
+    }
+
     router.push("/");
     router.refresh(); // refresh server components so they see the new session
   };
 
   return (
     <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+      <RoleSelector
+        value={role}
+        onChange={setRole}
+        legend="Signing in as"
+      />
+
+      <SocialAuth role={role} dividerLabel="or continue with email" />
+
       <div className="space-y-2">
         <label
           htmlFor="sign-in-email"

@@ -4,63 +4,74 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PasswordInput from "@/components/auth/password-input";
-import { authClient } from "@/lib/auth-client";
+import RoleSelector, { type Role } from "@/components/auth/role-selector";
+import SocialAuth from "@/components/auth/social-auth";
 
 const SignUpForm = () => {
   const router = useRouter();
 
-  // Password mismatch error (shown under the confirm password field)
-  const [error, setError] = useState<string | null>(null);
-  // Error from the server, e.g. "User already exists" (shown above the button)
-  const [serverError, setServerError] = useState<string | null>(null);
-  // Disables the button while the request is running
-  const [isPending, setIsPending] = useState(false);
+  const [role, setRole] = useState<Role>("seeker");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError(null);
-    setServerError(null);
+    if (isSubmitting) return;
 
     const formData = new FormData(event.currentTarget);
-    const name = String(formData.get("name") ?? "").trim();
-    const email = String(formData.get("email") ?? "").trim();
-    const password = String(formData.get("password") ?? "");
-    const confirmPassword = String(formData.get("confirmPassword") ?? "");
+    const values = Object.fromEntries(
+      [...formData.entries()].map(([key, value]) => [key, String(value)]),
+    );
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+    if (values.password !== values.confirmPassword) {
+      setPasswordError("Passwords do not match.");
       return;
     }
 
-    setIsPending(true);
+    setPasswordError(null);
+    setSubmitError(null);
+    setIsSubmitting(true);
 
-    // better-auth returns { data, error } instead of throwing.
-    // "error" is renamed so it does not clash with the state variable above.
-    const { error: signUpError } = await authClient.signUp.email({
-      name,
-      email,
-      password,
+    const { error } = await authClient.signUp.email({
+      name: values.name,
+      email: values.email,
+      password: values.password,
+      role,
     });
 
-    setIsPending(false);
+    setIsSubmitting(false);
 
-    // Stop here if sign up failed, otherwise we would redirect anyway
-    if (signUpError) {
-      setServerError(
-        signUpError.message ?? "Something went wrong. Please try again.",
+    if (error) {
+      setSubmitError(
+        error.message ?? "Could not create your account. Please try again.",
       );
       return;
     }
 
-    router.push("/");
+    console.log("Sign up payload:", {
+      name: values.name,
+      email: values.email,
+      role,
+    });
+    router.push("/sign-in");
     router.refresh(); // refresh server components so they see the new session
   };
 
   return (
     <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+      <RoleSelector
+        value={role}
+        onChange={setRole}
+        legend="Joining HireLoop as"
+      />
+
+      <SocialAuth role={role} dividerLabel="or sign up with email" />
+
       <div className="space-y-2">
         <label
           htmlFor="sign-up-name"
@@ -127,12 +138,16 @@ const SignUpForm = () => {
           placeholder="Repeat your password"
           required
           minLength={8}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? "sign-up-error" : undefined}
+          aria-invalid={passwordError ? true : undefined}
+          aria-describedby={passwordError ? "sign-up-password-error" : undefined}
         />
-        {error ? (
-          <p id="sign-up-error" role="alert" className="text-xs text-red-400">
-            {error}
+        {passwordError ? (
+          <p
+            id="sign-up-password-error"
+            role="alert"
+            className="text-xs text-red-400"
+          >
+            {passwordError}
           </p>
         ) : null}
       </div>
@@ -163,19 +178,22 @@ const SignUpForm = () => {
         </span>
       </label>
 
-      {serverError ? (
-        <p role="alert" className="text-sm text-red-400">
-          {serverError}
+      {submitError ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-xs leading-5 text-red-300"
+        >
+          {submitError}
         </p>
       ) : null}
 
       <Button
         type="submit"
         size="lg"
-        disabled={isPending}
+        disabled={isSubmitting}
         className="h-11 w-full rounded-xl! bg-indigo-600! text-sm font-semibold text-white! hover:bg-indigo-500! disabled:opacity-60"
       >
-        {isPending ? "Creating account..." : "Create account"}
+        {isSubmitting ? "Creating account..." : "Create account"}
       </Button>
 
       <p className="text-center text-sm text-zinc-500">
