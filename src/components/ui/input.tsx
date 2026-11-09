@@ -1,9 +1,10 @@
-import type { ComponentProps } from "react";
-import { cn } from "cn";
+import * as React from "react"
+import { Input as InputPrimitive } from "@base-ui/react/input"
+import { cn } from "cn"
 
-function Input({ className, type, ...props }: ComponentProps<"input">) {
+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
-    <input
+    <InputPrimitive
       type={type}
       data-slot="input"
       className={cn(
@@ -12,11 +13,11 @@ function Input({ className, type, ...props }: ComponentProps<"input">) {
         "focus-visible:border-indigo-500/60 focus-visible:ring-2 focus-visible:ring-indigo-500/20",
         "disabled:cursor-not-allowed disabled:opacity-50",
         "aria-invalid:border-red-500/60 aria-invalid:ring-2 aria-invalid:ring-red-500/15",
-        className,
+        className
       )}
       {...props}
     />
-  );
+  )
 }
 
-export { Input };
+export { Input }
