@@ -1,36 +1,40 @@
-"use client";
-
+import { Suspense } from "react";
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 import {
+  Boxes,
+  Briefcase,
   ChevronRight,
   Code2,
   Globe,
+  Headset,
   MapPin,
   Megaphone,
   MoreVertical,
   Palette,
   Pencil,
   Plus,
-  Server,
-  ShieldCheck,
-  Trash2,
+  Settings2,
   Users,
+  Wallet,
 } from "lucide-react";
 import { cn } from "cn";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { getJobs, type JobDocument } from "@/lib/api/jobs";
+import { DeleteJobDialog } from "@/app/components/DeleteJobDialog";
 
 type JobStatus = "Active" | "Expired";
 type WorkMode = "Remote" | "Hybrid" | "On-site";
 
-type JobPost = {
+export type JobPost = {
   id: string;
   title: string;
   department: string;
   companyName: string;
   city: string;
   workMode: WorkMode;
-  jobType: "Full-time" | "Part-time";
+  jobType: string;
   compensation: string;
   applicants: number;
   status: JobStatus;
@@ -38,90 +42,57 @@ type JobPost = {
   timeline: string;
 };
 
-// Placeholder rows until the API exposes a GET /jobs endpoint.
-const JOB_POSTS: JobPost[] = [
+const departmentStyles: Array<{
+  match: RegExp;
+  icon: LucideIcon;
+  className: string;
+}> = [
   {
-    id: "frontend-developer",
-    title: "Frontend Developer",
-    department: "Engineering",
-    companyName: "HirePulse Network",
-    city: "New York, USA",
-    workMode: "Remote",
-    jobType: "Full-time",
-    compensation: "$25 – $40 / hr",
-    applicants: 34,
-    status: "Active",
-    deadline: "May 30, 2025",
-    timeline: "Posted 4d ago",
+    match: /engineering|tech/i,
+    icon: Code2,
+    className: "bg-indigo-500/10 text-indigo-300",
   },
   {
-    id: "senior-product-designer",
-    title: "Senior Product Designer",
-    department: "Design",
-    companyName: "HirePulse Labs",
-    city: "London, UK",
-    workMode: "Hybrid",
-    jobType: "Full-time",
-    compensation: "$90k – $115k / yr",
-    applicants: 19,
-    status: "Active",
-    deadline: "Jun 14, 2025",
-    timeline: "Posted 1w ago",
+    match: /design|creative/i,
+    icon: Palette,
+    className: "bg-orange-500/10 text-orange-300",
   },
   {
-    id: "devops-specialist",
-    title: "DevOps Specialist",
-    department: "Infrastructure",
-    companyName: "HirePulse Platform",
-    city: "Berlin, Germany",
-    workMode: "On-site",
-    jobType: "Full-time",
-    compensation: "$95k – $120k / yr",
-    applicants: 12,
-    status: "Active",
-    deadline: "Jun 30, 2025",
-    timeline: "Posted 2w ago",
+    match: /product/i,
+    icon: Boxes,
+    className: "bg-sky-500/10 text-sky-300",
   },
   {
-    id: "product-marketing-lead",
-    title: "Product Marketing Lead",
-    department: "Marketing",
-    companyName: "HirePulse Network",
-    city: "EU/US",
-    workMode: "Remote",
-    jobType: "Full-time",
-    compensation: "$80k – $105k / yr",
-    applicants: 27,
-    status: "Active",
-    deadline: "Jul 15, 2025",
-    timeline: "Posted 5d ago",
+    match: /marketing|sales/i,
+    icon: Megaphone,
+    className: "bg-violet-500/10 text-violet-300",
   },
   {
-    id: "qa-automation-engineer",
-    title: "QA Automation Engineer",
-    department: "Quality",
-    companyName: "HirePulse Platform",
-    city: "Dublin, Ireland",
-    workMode: "Hybrid",
-    jobType: "Part-time",
-    compensation: "$35 – $50 / hr",
-    applicants: 8,
-    status: "Expired",
-    deadline: "May 01, 2025",
-    timeline: "Closed",
+    match: /customer|support|service/i,
+    icon: Headset,
+    className: "bg-pink-500/10 text-pink-300",
+  },
+  {
+    match: /operation/i,
+    icon: Settings2,
+    className: "bg-amber-500/10 text-amber-300",
+  },
+  {
+    match: /finance|account/i,
+    icon: Wallet,
+    className: "bg-teal-500/10 text-teal-300",
   },
 ];
 
-const departments: Record<
-  string,
-  { icon: typeof Code2; className: string }
-> = {
-  Engineering: { icon: Code2, className: "bg-indigo-500/10 text-indigo-300" },
-  Design: { icon: Palette, className: "bg-orange-500/10 text-orange-300" },
-  Infrastructure: { icon: Server, className: "bg-sky-500/10 text-sky-300" },
-  Marketing: { icon: Megaphone, className: "bg-violet-500/10 text-violet-300" },
-  Quality: { icon: ShieldCheck, className: "bg-emerald-500/10 text-emerald-300" },
+const fallbackDepartment = {
+  icon: Briefcase,
+  className: "bg-white/[0.06] text-zinc-300",
 };
+
+const resolveDepartment = (category: string) =>
+  departmentStyles.find((entry) => entry.match.test(category)) ??
+  fallbackDepartment;
+
 
 // Applicants only join the table on xl screens, status on lg, so the remaining
 // columns keep their design proportions instead of squeezing the job titles.
@@ -131,10 +102,95 @@ const columns =
 const mobileLabel =
   "mb-1 block text-[10px] font-semibold tracking-[0.08em] text-zinc-500 uppercase md:hidden";
 
+const FREQUENCY_SUFFIX: Record<string, string> = {
+  "per hour": "hr",
+  "per day": "day",
+  "per month": "month",
+  "per year": "yr",
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 const locationLabel = (job: JobPost) =>
   job.workMode === "Remote"
     ? `Remote (${job.city})`
     : `${job.city} (${job.workMode})`;
+
+const formatMoney = (value: number, perYear: boolean) =>
+  perYear && value >= 1000
+    ? `$${Math.round(value / 1000)}k`
+    : `$${value.toLocaleString("en-US")}`;
+
+const formatCompensation = (job: JobDocument) => {
+  const low = job.minSalary ?? job.maxSalary ?? null;
+  const high = job.maxSalary ?? job.minSalary ?? null;
+  const frequency = job.frequency ?? job.salaryFrequency ?? null;
+
+  if (low === null || high === null) return "Not disclosed";
+
+  const perYear = frequency === "per year";
+  const range =
+    low === high
+      ? formatMoney(low, perYear)
+      : `${formatMoney(low, perYear)} – ${formatMoney(high, perYear)}`;
+
+  const suffix = frequency
+    ? (FREQUENCY_SUFFIX[frequency] ?? frequency.replace("per ", ""))
+    : null;
+
+  return suffix ? `${range} / ${suffix}` : range;
+};
+
+const formatDeadline = (value: string | null | undefined) => {
+  if (!value) return "No deadline";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "No deadline";
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  });
+};
+
+const formatTimeline = (job: JobDocument, expired: boolean) => {
+  if (expired) return "Closed";
+  if (!job.createdAt) return "Recently posted";
+
+  const created = new Date(job.createdAt).getTime();
+  if (Number.isNaN(created)) return "Recently posted";
+
+  const days = Math.floor((Date.now() - created) / DAY_MS);
+
+  if (days <= 0) return "Posted today";
+  if (days < 7) return `Posted ${days}d ago`;
+  if (days < 30) return `Posted ${Math.floor(days / 7)}w ago`;
+
+  return `Posted ${Math.floor(days / 30)}mo ago`;
+};
+
+// The API stores raw job documents; the table renders a presentation model.
+const toJobPost = (job: JobDocument): JobPost => {
+  const expiresAt = job.deadline ? new Date(job.deadline).getTime() : Number.NaN;
+  const expired = !Number.isNaN(expiresAt) && expiresAt < Date.now();
+
+  return {
+    id: job._id,
+    title: job.title ?? job.jobTitle ?? "Untitled role",
+    department: job.category,
+    companyName: job.companyName,
+    city: job.location,
+    workMode: job.isRemote ? "Remote" : "On-site",
+    jobType: job.jobType,
+    compensation: formatCompensation(job),
+    // The API has no applicants field yet.
+    applicants: 0,
+    status: expired ? "Expired" : "Active",
+    deadline: formatDeadline(job.deadline),
+    timeline: formatTimeline(job, expired),
+  };
+};
 
 function StatusPill({ status }: { status: JobStatus }) {
   const isActive = status === "Active";
@@ -157,6 +213,228 @@ function StatusPill({ status }: { status: JobStatus }) {
       />
       {status}
     </span>
+  );
+}
+
+function JobsTableSkeleton() {
+  return (
+    <div className="mt-8 overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+      <div className="hidden h-10 border-b border-white/[0.06] md:block" />
+      <ul className="divide-y divide-white/[0.06]">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <li key={index} className="px-4 py-4 md:px-5">
+            <div className="flex items-center gap-3">
+              <span className="size-9 shrink-0 animate-pulse rounded-lg bg-white/[0.06]" />
+              <div className="flex-1 space-y-2">
+                <span className="block h-3 w-40 animate-pulse rounded bg-white/[0.06]" />
+                <span className="block h-2.5 w-24 animate-pulse rounded bg-white/[0.04]" />
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="mt-8 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-6 py-14 text-center">
+      <span className="mx-auto flex size-12 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-zinc-400">
+        <Briefcase aria-hidden="true" className="size-5" />
+      </span>
+      <p className="mt-4 text-[15px] font-medium text-white">No job posts yet</p>
+      <p className="mt-1 text-sm text-zinc-500">
+        Publish your first listing and it will show up here.
+      </p>
+      <Link
+        href="/dashboard/recruiter/jobs/new"
+        className={cn(
+          buttonVariants({ size: "lg" }),
+          "mt-5 h-9 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-500",
+        )}
+      >
+        <Plus aria-hidden="true" className="size-4" />
+        New Job Post
+      </Link>
+    </div>
+  );
+}
+
+function ErrorState({ message }: { message: string }) {
+  return (
+    <div
+      role="alert"
+      className="mt-8 rounded-2xl border border-red-500/30 bg-red-500/10 p-5"
+    >
+      <p className="text-sm font-medium text-red-200">Could not load job posts</p>
+      <p className="mt-1 text-sm text-red-200/80">{message}</p>
+      <p className="mt-2 text-xs text-red-200/60">
+        Check that the backend is running on port 5000 and exposes GET /jobs.
+      </p>
+    </div>
+  );
+}
+
+async function JobsTable() {
+  let jobs: JobPost[];
+
+  try {
+    const documents = await getJobs();
+    jobs = documents.map(toJobPost);
+  } catch (error) {
+    const message =
+      error instanceof TypeError
+        ? "The API did not respond. Is the backend running on port 5000?"
+        : error instanceof Error
+          ? error.message
+          : "Unknown error.";
+
+    return <ErrorState message={message} />;
+  }
+
+  if (jobs.length === 0) return <EmptyState />;
+
+  return (
+    <div className="mt-8 overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+      <div
+        className={cn(
+          "hidden items-center gap-2 border-b border-white/[0.06] px-5 py-3 text-[11px] font-semibold tracking-[0.08em] text-zinc-500 uppercase md:grid",
+          columns,
+        )}
+      >
+        <span>Job title &amp; dept</span>
+        <span>Company &amp; location</span>
+        <span>Type</span>
+        <span>Compensation</span>
+        <span className="hidden xl:block">Applicants</span>
+        <span className="hidden lg:block">Status</span>
+        <span>Deadline</span>
+        <span className="text-right">Actions</span>
+      </div>
+
+      <ul className="divide-y divide-white/[0.06]">
+        {jobs.map((job) => {
+          const department = resolveDepartment(job.department);
+          const DepartmentIcon = department.icon;
+
+          return (
+            <li
+              key={job.id}
+              className="px-4 py-4 transition-colors hover:bg-white/[0.02] md:px-5"
+            >
+              <div
+                className={cn(
+                  "grid grid-cols-2 items-start gap-x-2 gap-y-3 md:items-center md:gap-y-0",
+                  columns,
+                )}
+              >
+                <div className="col-span-2 flex min-w-0 items-center gap-3 md:col-span-1">
+                  <span
+                    className={cn(
+                      "flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/10",
+                      department.className,
+                    )}
+                  >
+                    <DepartmentIcon aria-hidden="true" className="size-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p
+                        title={job.title}
+                        className="truncate text-[15px] font-medium text-white"
+                      >
+                        {job.title}
+                      </p>
+                      <span className="lg:hidden">
+                        <StatusPill status={job.status} />
+                      </span>
+                    </div>
+                    <p className="mt-0.5 truncate text-xs font-medium text-indigo-400">
+                      {job.department}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="col-span-2 min-w-0 md:col-span-1">
+                  <p className="truncate text-[13px] text-zinc-200">
+                    {job.companyName}
+                  </p>
+                  <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500">
+                    {job.workMode === "Remote" ? (
+                      <Globe aria-hidden="true" className="size-3.5 shrink-0" />
+                    ) : (
+                      <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
+                    )}
+                    <span className="truncate">{locationLabel(job)}</span>
+                  </p>
+                </div>
+
+                <div>
+                  <span className={mobileLabel}>Type</span>
+                  <span className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs whitespace-nowrap text-zinc-300">
+                    {job.jobType}
+                  </span>
+                </div>
+
+                <div>
+                  <span className={mobileLabel}>Compensation</span>
+                  <p
+                    title={job.compensation}
+                    className="truncate text-[13px] font-medium text-zinc-100"
+                  >
+                    {job.compensation}
+                  </p>
+                </div>
+
+                <div className="col-span-2 md:col-span-1 md:hidden xl:block">
+                  <span className={mobileLabel}>Applicants</span>
+                  <p className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+                    <Users
+                      aria-hidden="true"
+                      className="size-4 shrink-0 text-zinc-500"
+                    />
+                    <span className="font-semibold text-white">
+                      {job.applicants}
+                    </span>
+                    <span className="text-zinc-500">Candidates</span>
+                  </p>
+                </div>
+
+                <div className="hidden lg:flex">
+                  <StatusPill status={job.status} />
+                </div>
+
+                <div className="col-span-2 md:col-span-1">
+                  <span className={mobileLabel}>Deadline</span>
+                  <p className="text-[13px] whitespace-nowrap text-zinc-200">
+                    {job.deadline}
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-500">{job.timeline}</p>
+                </div>
+
+                <div className="col-span-2 flex items-center gap-2 md:col-span-1 md:justify-end">
+                  <Button
+                    variant="ghost"
+                    className="h-8 rounded-lg bg-indigo-600 px-3 text-xs font-medium text-white hover:bg-indigo-500"
+                  >
+                    <Pencil aria-hidden="true" className="size-3.5" />
+                  </Button>
+                    <DeleteJobDialog job={job} />
+                  <button
+                    type="button"
+                    aria-label={`More actions for ${job.title}`}
+                    className="rounded-lg border border-white/10 p-1.5 text-zinc-500 transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    <MoreVertical aria-hidden="true" className="size-4" />
+                  </button>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
@@ -200,160 +478,11 @@ const ManageJobsPage = () => {
         </Link>
       </div>
 
-      <div className="mt-8 overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-        <div
-          className={cn(
-            "hidden items-center gap-2 border-b border-white/[0.06] px-5 py-3 text-[11px] font-semibold tracking-[0.08em] text-zinc-500 uppercase md:grid",
-            columns,
-          )}
-        >
-          <span>Job title &amp; dept</span>
-          <span>Company &amp; location</span>
-          <span>Type</span>
-          <span>Compensation</span>
-          <span className="hidden xl:block">Applicants</span>
-          <span className="hidden lg:block">Status</span>
-          <span>Deadline</span>
-          <span className="text-right">Actions</span>
-        </div>
-
-        <ul className="divide-y divide-white/[0.06]">
-          {JOB_POSTS.map((job) => {
-            const department = departments[job.department];
-            const DepartmentIcon = department.icon;
-
-            return (
-              <li
-                key={job.id}
-                className="px-4 py-4 transition-colors hover:bg-white/[0.02] md:px-5"
-              >
-                <div
-                  className={cn(
-                    "grid grid-cols-2 items-start gap-x-2 gap-y-3 md:items-center md:gap-y-0",
-                    columns,
-                  )}
-                >
-                  <div className="col-span-2 flex min-w-0 items-center gap-3 md:col-span-1">
-                    <span
-                      className={cn(
-                        "flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/10",
-                        department.className,
-                      )}
-                    >
-                      <DepartmentIcon
-                        aria-hidden="true"
-                        className="size-4"
-                      />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="truncate text-[15px] font-medium text-white">
-                          {job.title}
-                        </p>
-                        <span className="lg:hidden">
-                          <StatusPill status={job.status} />
-                        </span>
-                      </div>
-                      <p className="mt-0.5 truncate text-xs font-medium text-indigo-400">
-                        {job.department}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="col-span-2 min-w-0 md:col-span-1">
-                    <p className="truncate text-[13px] text-zinc-200">
-                      {job.companyName}
-                    </p>
-                    <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500">
-                      {job.workMode === "Remote" ? (
-                        <Globe aria-hidden="true" className="size-3.5 shrink-0" />
-                      ) : (
-                        <MapPin
-                          aria-hidden="true"
-                          className="size-3.5 shrink-0"
-                        />
-                      )}
-                      <span className="truncate">{locationLabel(job)}</span>
-                    </p>
-                  </div>
-
-                  <div>
-                    <span className={mobileLabel}>Type</span>
-                    <span className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs whitespace-nowrap text-zinc-300">
-                      {job.jobType}
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className={mobileLabel}>Compensation</span>
-                    <p className="truncate text-[13px] font-medium text-zinc-100">
-                      {job.compensation}
-                    </p>
-                  </div>
-
-                  <div className="col-span-2 md:col-span-1 md:hidden xl:block">
-                    <span className={mobileLabel}>Applicants</span>
-                    <p className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-                      <Users
-                        aria-hidden="true"
-                        className="size-4 shrink-0 text-zinc-500"
-                      />
-                      <span className="font-semibold text-white">
-                        {job.applicants}
-                      </span>
-                      <span className="text-zinc-500">Candidates</span>
-                    </p>
-                  </div>
-
-                  <div className="hidden lg:flex">
-                    <StatusPill status={job.status} />
-                  </div>
-
-                  <div className="col-span-2 md:col-span-1">
-                    <span className={mobileLabel}>Deadline</span>
-                    <p className="text-[13px] whitespace-nowrap text-zinc-200">
-                      {job.deadline}
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-500">
-                      {job.timeline}
-                    </p>
-                  </div>
-
-                  <div className="col-span-2 flex items-center gap-2 md:col-span-1 md:justify-end">
-                    <Button
-                      variant="ghost"
-                      className="h-8 rounded-lg bg-indigo-600 px-3 text-xs font-medium text-white hover:bg-indigo-500"
-                    >
-                      <Pencil aria-hidden="true" className="size-3.5" />
-                      Update
-                    </Button>
-                    <button
-                      type="button"
-                      aria-label={`Delete ${job.title}`}
-                      className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-white/10 hover:text-white"
-                    >
-                      <Trash2 aria-hidden="true" className="size-4" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`More actions for ${job.title}`}
-                      className="rounded-lg border border-white/10 p-1.5 text-zinc-500 transition-colors hover:bg-white/10 hover:text-white"
-                    >
-                      <MoreVertical aria-hidden="true" className="size-4" />
-                    </button>
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+      <Suspense fallback={<JobsTableSkeleton />}>
+        <JobsTable />
+      </Suspense>
     </div>
   );
 };
 
 export default ManageJobsPage;
-
-
-
-

@@ -39,7 +39,7 @@ export type DashboardMenuItem = {
 /**
  * Sidebar navigation per role, following the HL 2.0/Sidebar spec in Figma.
  * Seeker: Dashboard, Jobs, Saved Jobs, Applications, Billing, Settings.
- * Recruiter: Dashboard, Manage Jobs, Applications, Settings.
+ * Recruiter: Dashboard, My Company, Add Jobs, Manage Jobs, Applications, Settings.
  * Admin: Dashboard, Users, Companies, Jobs, Payments, Settings.
  */
 export const menuItemsByRole: Record<DashboardRole, DashboardMenuItem[]> = {
@@ -87,6 +87,12 @@ export const menuItemsByRole: Record<DashboardRole, DashboardMenuItem[]> = {
       name: "Dashboard",
       url: "/dashboard/recruiter",
       icon: LayoutDashboard,
+    },
+    {
+      id: "recruiter-company",
+      name: "My Company",
+      url: "/dashboard/recruiter/my-company",
+      icon: Building2,
     },
     {
       id: "add-jobs",
