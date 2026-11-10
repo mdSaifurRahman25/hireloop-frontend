@@ -14,7 +14,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { JobPost } from "../(dashboard)/dashboard/recruiter/jobs/page"
+import type { JobPost } from "@/types"
 import { deleteJob } from "@/lib/actions/jobs"
 import { useState } from "react"
 import { toast } from "@/components/ui/toast"
@@ -30,7 +30,7 @@ export function DeleteJobDialog({job}: {job: JobPost}) {
       setIsDeleting(true);
       const res = await deleteJob(job.id); 
       console.log('deleting', res);
-      if (res?.deletedCount > 0 || res?.deleteCount > 0 || res?.acknowledged) {
+      if ((res?.deletedCount ?? 0) > 0 || Boolean(res?.acknowledged)) {
         setOpen(false); 
         toast.add({
           title: 'Job Deleted!',

@@ -1,13 +1,13 @@
+import type {
+  CreateJobResponse,
+  DeleteJobResponse,
+  JobPayload,
+  UpdateJobResponse,
+} from "@/types";
+
+export type { CreateJobResponse, DeleteJobResponse, JobPayload, UpdateJobResponse };
+
 const BASE_URI = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000";
-
-// Every value read from the form is a string; the API converts what it needs.
-export type JobPayload = Record<string, string>;
-
-export type CreateJobResponse = {
-  message: string;
-  insertedId: string;
-  job: Record<string, unknown>;
-};
 
 export const createJob = async (
   data: JobPayload,
@@ -18,7 +18,6 @@ export const createJob = async (
     body: JSON.stringify(data),
   });
 
-  // An error page (404/500) is not always JSON, so never let parsing throw.
   const result = await response.json().catch(() => null);
 
   if (!response.ok) {
@@ -30,7 +29,10 @@ export const createJob = async (
   return result as CreateJobResponse;
 };
 
-export const updateJob = async (jobId: string, data: JobPayload) => {
+export const updateJob = async (
+  jobId: string,
+  data: JobPayload,
+): Promise<UpdateJobResponse> => {
   const response = await fetch(`${BASE_URI}/jobs/${jobId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -38,18 +40,22 @@ export const updateJob = async (jobId: string, data: JobPayload) => {
   });
   const result = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error(result?.message ?? `Failed to update job (HTTP ${response.status})`);
+    throw new Error(
+      result?.message ?? `Failed to update job (HTTP ${response.status})`,
+    );
   }
-  return result;
+  return result as UpdateJobResponse;
 };
 
-export const deleteJob = async (jobId: string) => {
+export const deleteJob = async (jobId: string): Promise<DeleteJobResponse> => {
   const response = await fetch(`${BASE_URI}/jobs/${jobId}`, {
-    method: 'DELETE', 
-  }); 
+    method: "DELETE",
+  });
   const result = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error(result?.message ?? `Failed to delete job (HTTP ${response.status})`);
+    throw new Error(
+      result?.message ?? `Failed to delete job (HTTP ${response.status})`,
+    );
   }
-  return result; 
-}; 
+  return result as DeleteJobResponse;
+};

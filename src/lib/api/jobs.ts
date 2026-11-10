@@ -1,28 +1,8 @@
-const BASE_URI = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000";
+import type { JobDocument } from "@/types";
 
-/**
- * A job document as stored in MongoDB. The collection is not uniform yet:
- * older rows use `title` / `frequency` while newer ones use `jobTitle` /
- * `salaryFrequency`, so the optional fields cover both shapes.
- */
-export type JobDocument = {
-  _id: string;
-  title?: string;
-  jobTitle?: string;
-  companyName: string;
-  category: string;
-  jobType: string;
-  isRemote: boolean;
-  location: string;
-  deadline?: string | null;
-  minSalary?: number | null;
-  maxSalary?: number | null;
-  frequency?: string | null;
-  salaryFrequency?: string | null;
-  responsibilities?: string | null;
-  qualifications?: string | null;
-  createdAt?: string | null;
-};
+export type { JobDocument };
+
+const BASE_URI = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000";
 
 /**
  * Reads every job post from the API.

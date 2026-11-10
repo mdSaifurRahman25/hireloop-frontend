@@ -2,6 +2,7 @@
 
 import { ShieldCheck, UserRound, UsersRound } from "lucide-react";
 import { cn } from "cn";
+import type { UserRole } from "@/types";
 
 export const roles = [
   { value: "seeker", label: "Job Seeker", icon: UserRound },
@@ -9,7 +10,7 @@ export const roles = [
   { value: "admin", label: "Admin", icon: ShieldCheck },
 ] as const;
 
-export type Role = (typeof roles)[number]["value"];
+export type Role = UserRole;
 
 export const roleLabel = (role: string) =>
   roles.find((option) => option.value === role)?.label ?? role;

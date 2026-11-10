@@ -6,7 +6,6 @@ import {
   ArrowRight,
   Building2,
   CalendarDays,
-  ChevronDown,
   ChevronRight,
   DollarSign,
   Globe,
@@ -18,130 +17,26 @@ import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createJob } from "@/lib/actions/jobs";
-
-const JOB_TYPES = ["Full-time", "Part-time", "Contract", "Internship"] as const;
-
-const JOB_CATEGORIES = [
-  "Engineering & Tech",
-  "Design",
-  "Product",
-  "Marketing",
-  "Sales",
-  "Operations",
-  "Finance",
-  "Customer Support",
-];
-const FREQUENCIES = ["per hour", "per day", "per month", "per year"];
-
-const inputIcon =
-  "pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-zinc-500";
-
-function FieldLabel({
-  htmlFor,
-  id,
-  children,
-  required,
-  hint,
-}: {
-  htmlFor?: string;
-  id?: string;
-  children: React.ReactNode;
-  required?: boolean;
-  hint?: React.ReactNode;
-}) {
-  const labelClassName = "text-sm font-medium text-zinc-200";
-  const content = (
-    <>
-      {children}
-      {required ? (
-        <span aria-hidden="true" className="ml-1 text-indigo-400">
-          *
-        </span>
-      ) : null}
-    </>
-  );
-
-  return (
-    <div className="mb-2 flex items-center justify-between gap-3">
-      {htmlFor ? (
-        <label htmlFor={htmlFor} className={labelClassName}>
-          {content}
-        </label>
-      ) : (
-        <span id={id} className={labelClassName}>
-          {content}
-        </span>
-      )}
-      {hint}
-    </div>
-  );
-}
-
-function SelectField({
-  id,
-  name,
-  options,
-  defaultValue,
-}: {
-  id: string;
-  name: string;
-  options: readonly string[];
-  defaultValue?: string;
-}) {
-  return (
-    <div className="relative">
-      <select
-        id={id}
-        name={name}
-        defaultValue={defaultValue}
-        className="h-11 w-full appearance-none rounded-xl border border-white/10 bg-white/[0.04] px-4 pr-10 text-[15px] text-white outline-none transition-colors focus-visible:border-indigo-500/60 focus-visible:ring-2 focus-visible:ring-indigo-500/20"
-      >
-        {options.map((option) => (
-          <option
-            key={option}
-            value={option}
-            className="bg-[#141414] text-white"
-          >
-            {option}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-zinc-500" />
-    </div>
-  );
-}
-
-function SectionHeading({
-  step,
-  children,
-}: {
-  step: number;
-  children: React.ReactNode;
-}) {
-  return (
-    <h2 className="flex items-center gap-2.5 text-[17px] font-semibold text-white">
-      <span
-        aria-hidden="true"
-        className="size-1.5 rounded-full bg-indigo-500"
-      />
-      <span>
-        {step}. {children}
-      </span>
-    </h2>
-  );
-}; 
-
-type SubmitStatus = {
-  type: "success" | "error";
-  message: string;
-};
+import { toast } from "@/components/ui/toast";
+import { useRouter } from "next/navigation";
+import {
+  FREQUENCIES,
+  JOB_CATEGORIES,
+  JOB_TYPES,
+} from "@/lib/constants/jobs";
+import {
+  JobFieldLabel,
+  JobSectionHeading,
+  JobSelectField,
+  inputIconClassName,
+} from "@/components/jobs/job-form-controls";
 
 const NewJobPage = () => {
+  const router = useRouter(); 
   const [title, setTitle] = useState("");
   const [jobType, setJobType] =
     useState<(typeof JOB_TYPES)[number]>("Full-time");
   const [isRemote, setIsRemote] = useState(true);
-  const [status, setStatus] = useState<SubmitStatus | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const deadlineRef = useRef<HTMLInputElement>(null);
 
@@ -168,19 +63,28 @@ const NewJobPage = () => {
     );
 
     setIsSubmitting(true);
-    setStatus(null);
-
     try {
       const result = await createJob(jobData);
 
-      form.reset();
-      setTitle("");
-      setJobType("Full-time");
-      setIsRemote(true);
-      setStatus({
-        type: "success",
-        message: result.message ?? "Job published successfully.",
-      });
+      if (result.insertedId) {
+        form.reset();
+        setTitle("");
+        setJobType("Full-time");
+        setIsRemote(true);
+
+        toast.add({
+          title: "Job Added!",
+          description: "The new job has been successfully added.",
+        });
+
+        router.push("/dashboard/recruiter/jobs");
+        router.refresh();
+      } else {
+        toast.add({
+          title: "Failed to publish job",
+          description: result.message || "Could not publish the job.",
+        });
+      }
     } catch (error) {
       const message =
         error instanceof TypeError
@@ -189,7 +93,10 @@ const NewJobPage = () => {
             ? error.message
             : "Could not publish the job.";
 
-      setStatus({ type: "error", message });
+      toast.add({
+        title: "Failed to publish job",
+        description: message,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -229,12 +136,12 @@ const NewJobPage = () => {
         onSubmit={handleFormSubmit}
       >
         <section className="space-y-5">
-          <SectionHeading step={1}>Basic Information</SectionHeading>
+          <JobSectionHeading step={1}>Basic Information</JobSectionHeading>
 
           <div>
-            <FieldLabel htmlFor="title" required>
+            <JobFieldLabel htmlFor="title" required>
               Job Title
-            </FieldLabel>
+            </JobFieldLabel>
             <div className="relative">
               <Input
                 id="title"
@@ -261,11 +168,11 @@ const NewJobPage = () => {
 
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
-              <FieldLabel htmlFor="companyName" required>
+              <JobFieldLabel htmlFor="companyName" required>
                 Company Name
-              </FieldLabel>
+              </JobFieldLabel>
               <div className="relative">
-                <Building2 aria-hidden="true" className={inputIcon} />
+                <Building2 aria-hidden="true" className={inputIconClassName} />
                 <Input
                   id="companyName"
                   name="companyName"
@@ -278,10 +185,10 @@ const NewJobPage = () => {
             </div>
 
             <div>
-              <FieldLabel htmlFor="category" required>
+              <JobFieldLabel htmlFor="category" required>
                 Job Category
-              </FieldLabel>
-              <SelectField
+              </JobFieldLabel>
+              <JobSelectField
                 id="category"
                 name="category"
                 options={JOB_CATEGORIES}
@@ -291,9 +198,9 @@ const NewJobPage = () => {
           </div>
 
           <div>
-            <FieldLabel id="jobType-label" required>
+            <JobFieldLabel id="jobType-label" required>
               Job Type
-            </FieldLabel>
+            </JobFieldLabel>
             <div
               role="group"
               aria-labelledby="jobType-label"
@@ -321,9 +228,9 @@ const NewJobPage = () => {
         </section>
 
         <section className="space-y-5">
-          <SectionHeading step={2}>
+          <JobSectionHeading step={2}>
             Location, Compensation &amp; Timeline
-          </SectionHeading>
+          </JobSectionHeading>
 
           <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/5 bg-white/[0.04] p-4">
             <div className="flex items-center gap-3">
@@ -364,16 +271,16 @@ const NewJobPage = () => {
 
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
-              <FieldLabel
+              <JobFieldLabel
                 htmlFor="location"
                 hint={
                   <span className="text-[11px] text-zinc-500">Required</span>
                 }
               >
                 Job Location (location)
-              </FieldLabel>
+              </JobFieldLabel>
               <div className="relative">
-                <MapPin aria-hidden="true" className={inputIcon} />
+                <MapPin aria-hidden="true" className={inputIconClassName} />
                 <Input
                   id="location"
                   name="location"
@@ -386,11 +293,11 @@ const NewJobPage = () => {
             </div>
 
             <div>
-              <FieldLabel htmlFor="deadline">
+              <JobFieldLabel htmlFor="deadline">
                 Application Deadline (deadline)
-              </FieldLabel>
+              </JobFieldLabel>
               <div className="relative">
-                <CalendarDays aria-hidden="true" className={inputIcon} />
+                <CalendarDays aria-hidden="true" className={inputIconClassName} />
                 <Input
                   ref={deadlineRef}
                   id="deadline"
@@ -405,9 +312,9 @@ const NewJobPage = () => {
 
           <div className="grid gap-5 sm:grid-cols-3">
             <div>
-              <FieldLabel htmlFor="minSalary">Min Salary / Rate</FieldLabel>
+              <JobFieldLabel htmlFor="minSalary">Min Salary / Rate</JobFieldLabel>
               <div className="relative">
-                <DollarSign aria-hidden="true" className={inputIcon} />
+                <DollarSign aria-hidden="true" className={inputIconClassName} />
                 <Input
                   id="minSalary"
                   name="minSalary"
@@ -419,9 +326,9 @@ const NewJobPage = () => {
             </div>
 
             <div>
-              <FieldLabel htmlFor="maxSalary">Max Salary / Rate</FieldLabel>
+              <JobFieldLabel htmlFor="maxSalary">Max Salary / Rate</JobFieldLabel>
               <div className="relative">
-                <DollarSign aria-hidden="true" className={inputIcon} />
+                <DollarSign aria-hidden="true" className={inputIconClassName} />
                 <Input
                   id="maxSalary"
                   name="maxSalary"
@@ -433,8 +340,8 @@ const NewJobPage = () => {
             </div>
 
             <div>
-              <FieldLabel htmlFor="frequency">Frequency</FieldLabel>
-              <SelectField
+              <JobFieldLabel htmlFor="frequency">Frequency</JobFieldLabel>
+              <JobSelectField
                 id="frequency"
                 name="frequency"
                 options={FREQUENCIES}
@@ -445,14 +352,14 @@ const NewJobPage = () => {
         </section>
 
         <section className="space-y-5">
-          <SectionHeading step={3}>
+          <JobSectionHeading step={3}>
             Responsibilities &amp; Requirements
-          </SectionHeading>
+          </JobSectionHeading>
 
           <div>
-            <FieldLabel htmlFor="responsibilities" required>
+            <JobFieldLabel htmlFor="responsibilities" required>
               Key Responsibilities
-            </FieldLabel>
+            </JobFieldLabel>
             <textarea
               id="responsibilities"
               name="responsibilities"
@@ -463,9 +370,9 @@ const NewJobPage = () => {
           </div>
 
           <div>
-            <FieldLabel htmlFor="qualifications" required>
+            <JobFieldLabel htmlFor="qualifications" required>
               Qualifications &amp; Requirements
-            </FieldLabel>
+            </JobFieldLabel>
             <textarea
               id="qualifications"
               name="qualifications"
@@ -476,7 +383,7 @@ const NewJobPage = () => {
           </div>
         </section>
         <section className="space-y-4">
-          {status ? (
+          {/* {status ? (
             <p
               role={status.type === "error" ? "alert" : "status"}
               className={cn(
@@ -488,7 +395,7 @@ const NewJobPage = () => {
             >
               {status.message}
             </p>
-          ) : null}
+          ) : null} */}
 
           <Button
             type="submit"

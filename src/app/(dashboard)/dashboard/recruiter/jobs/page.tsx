@@ -22,26 +22,17 @@ import {
 import { cn } from "cn";
 
 import { buttonVariants } from "@/components/ui/button";
-import { getJobs, type JobDocument } from "@/lib/api/jobs";
+import { getJobs } from "@/lib/api/jobs";
 import { DeleteJobDialog } from "@/app/components/DeleteJobDialog";
+import type { JobDocument, JobPost, JobStatus } from "@/types";
+import {
+  formatCompensation,
+  formatDeadline,
+  formatLocationLabel as locationLabel,
+  formatTimeline,
+} from "@/lib/utils/formatters";
 
-type JobStatus = "Active" | "Expired";
-type WorkMode = "Remote" | "Hybrid" | "On-site";
-
-export type JobPost = {
-  id: string;
-  title: string;
-  department: string;
-  companyName: string;
-  city: string;
-  workMode: WorkMode;
-  jobType: string;
-  compensation: string;
-  applicants: number;
-  status: JobStatus;
-  deadline: string;
-  timeline: string;
-};
+export type { JobPost };
 
 const departmentStyles: Array<{
   match: RegExp;
@@ -102,74 +93,6 @@ const columns =
 
 const mobileLabel =
   "mb-1 block text-[10px] font-semibold tracking-[0.08em] text-zinc-500 uppercase md:hidden";
-
-const FREQUENCY_SUFFIX: Record<string, string> = {
-  "per hour": "hr",
-  "per day": "day",
-  "per month": "month",
-  "per year": "yr",
-};
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-const locationLabel = (job: JobPost) =>
-  job.workMode === "Remote"
-    ? `Remote (${job.city})`
-    : `${job.city} (${job.workMode})`;
-
-const formatMoney = (value: number, perYear: boolean) =>
-  perYear && value >= 1000
-    ? `$${Math.round(value / 1000)}k`
-    : `$${value.toLocaleString("en-US")}`;
-
-const formatCompensation = (job: JobDocument) => {
-  const low = job.minSalary ?? job.maxSalary ?? null;
-  const high = job.maxSalary ?? job.minSalary ?? null;
-  const frequency = job.frequency ?? job.salaryFrequency ?? null;
-
-  if (low === null || high === null) return "Not disclosed";
-
-  const perYear = frequency === "per year";
-  const range =
-    low === high
-      ? formatMoney(low, perYear)
-      : `${formatMoney(low, perYear)} – ${formatMoney(high, perYear)}`;
-
-  const suffix = frequency
-    ? (FREQUENCY_SUFFIX[frequency] ?? frequency.replace("per ", ""))
-    : null;
-
-  return suffix ? `${range} / ${suffix}` : range;
-};
-
-const formatDeadline = (value: string | null | undefined) => {
-  if (!value) return "No deadline";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "No deadline";
-
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "2-digit",
-    year: "numeric",
-  });
-};
-
-const formatTimeline = (job: JobDocument, expired: boolean) => {
-  if (expired) return "Closed";
-  if (!job.createdAt) return "Recently posted";
-
-  const created = new Date(job.createdAt).getTime();
-  if (Number.isNaN(created)) return "Recently posted";
-
-  const days = Math.floor((Date.now() - created) / DAY_MS);
-
-  if (days <= 0) return "Posted today";
-  if (days < 7) return `Posted ${days}d ago`;
-  if (days < 30) return `Posted ${Math.floor(days / 7)}w ago`;
-
-  return `Posted ${Math.floor(days / 30)}mo ago`;
-};
 
 // The API stores raw job documents; the table renders a presentation model.
 const toJobPost = (job: JobDocument): JobPost => {

@@ -1,6 +1,5 @@
 'use client'
 
-import type { LucideIcon } from "lucide-react"
 import {
   Bookmark,
   Briefcase,
@@ -26,15 +25,9 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
+import type { DashboardMenuItem, DashboardRole } from "@/types"
 
-export type DashboardRole = "seeker" | "recruiter" | "admin"
-
-export type DashboardMenuItem = {
-  id: string
-  name: string
-  url: string
-  icon: LucideIcon
-}
+export type { DashboardMenuItem, DashboardRole }
 
 /**
  * Sidebar navigation per role, following the HL 2.0/Sidebar spec in Figma.

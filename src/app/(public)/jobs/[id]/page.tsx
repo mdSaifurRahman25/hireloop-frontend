@@ -23,27 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "cn";
 import { toast } from "@/components/ui/toast";
-import type { JobDocument } from "@/lib/api/jobs";
-
-interface JobDetails {
-  id: string;
-  title: string;
-  company: string;
-  isVerified: boolean;
-  salary: string;
-  location: string;
-  jobType: string;
-  experience: string;
-  description: string;
-  responsibilities: string[];
-  skills: { label: string; icon: "figma" | "system" | "uiux" | "frontend" }[];
-  requirements: string[];
-  benefits: { label: string; icon: "health" | "401k" | "hardware" | "pto" }[];
-  companySize: string;
-  industry: string;
-  websiteUrl: string;
-  officeImage: string;
-}
+import type { JobDetails, JobDocument } from "@/types";
 
 const PRESET_JOBS: Record<string, JobDetails> = {
   "job-1": {

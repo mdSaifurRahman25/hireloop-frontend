@@ -21,25 +21,7 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "cn";
-import type { JobDocument } from "@/lib/api/jobs";
-
-type BadgeType = "easy-apply" | "hot" | "neutral" | "senior";
-
-interface JobItem {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  salary: string;
-  type: "Full-time" | "Contract" | "Freelance" | string;
-  workMode?: "Remote" | "Hybrid" | "On-site";
-  level?: string;
-  badge?: {
-    label: string;
-    type: BadgeType;
-  };
-  logoColor: "cyan" | "blue" | "amber" | "indigo";
-}
+import type { JobDocument, JobItem } from "@/types";
 
 const DEFAULT_JOBS: JobItem[] = [
   {
