@@ -17,6 +17,7 @@ import { cn } from "cn";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { createJob } from "@/lib/actions/jobs";
 
 const JOB_TYPES = ["Full-time", "Part-time", "Contract", "Internship"] as const;
 
@@ -130,23 +131,9 @@ function SectionHeading({
   );
 }; 
 
-const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-
-  const formData = new FormData(e.currentTarget);
-  const data = Object.fromEntries(formData.entries());
-
-  // Every FormData value is a string, so convert the ones the API will need.
-  console.log(
-    {
-      ...data,
-      isRemote: data.isRemote === "true",
-      deadline: data.deadline || null,
-      minSalary: data.minSalary ? Number(data.minSalary) : null,
-      maxSalary: data.maxSalary ? Number(data.maxSalary) : null,
-    },
-    "from new job page.",
-  );
+type SubmitStatus = {
+  type: "success" | "error";
+  message: string;
 };
 
 const NewJobPage = () => {
@@ -154,6 +141,8 @@ const NewJobPage = () => {
   const [jobType, setJobType] =
     useState<(typeof JOB_TYPES)[number]>("Full-time");
   const [isRemote, setIsRemote] = useState(true);
+  const [status, setStatus] = useState<SubmitStatus | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const deadlineRef = useRef<HTMLInputElement>(null);
 
   // The earliest selectable deadline is today. This is applied after mount so
@@ -167,6 +156,44 @@ const NewJobPage = () => {
       .toISOString()
       .slice(0, 10);
   }, []);
+
+  const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isSubmitting) return;
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const jobData = Object.fromEntries(
+      Array.from(formData.entries(), ([key, value]) => [key, String(value)]),
+    );
+
+    setIsSubmitting(true);
+    setStatus(null);
+
+    try {
+      const result = await createJob(jobData);
+
+      form.reset();
+      setTitle("");
+      setJobType("Full-time");
+      setIsRemote(true);
+      setStatus({
+        type: "success",
+        message: result.message ?? "Job published successfully.",
+      });
+    } catch (error) {
+      const message =
+        error instanceof TypeError
+          ? "Could not reach the server. Is the backend running on port 5000?"
+          : error instanceof Error
+            ? error.message
+            : "Could not publish the job.";
+
+      setStatus({ type: "error", message });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="mx-auto w-full max-w-[1080px] pb-12">
@@ -216,6 +243,7 @@ const NewJobPage = () => {
                 onChange={(event) => setTitle(event.target.value)}
                 placeholder="e.g. Frontend Developer"
                 autoComplete="off"
+                required
                 className="pr-10 text-[15px]"
               />
               {title ? (
@@ -243,6 +271,7 @@ const NewJobPage = () => {
                   name="companyName"
                   placeholder="e.g. HirePulse Network"
                   autoComplete="organization"
+                  required
                   className="pl-11 text-[15px]"
                 />
               </div>
@@ -350,6 +379,7 @@ const NewJobPage = () => {
                   name="location"
                   placeholder="e.g. New York, USA"
                   autoComplete="off"
+                  required
                   className="pl-11 text-[15px]"
                 />
               </div>
@@ -426,6 +456,7 @@ const NewJobPage = () => {
             <textarea
               id="responsibilities"
               name="responsibilities"
+              required
               placeholder="Describe what this role owns day to day, the people it works with, and the outcomes it drives."
               className="min-h-[104px] w-full resize-y rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-[15px] text-white outline-none transition-colors placeholder:text-zinc-500 focus-visible:border-indigo-500/60 focus-visible:ring-2 focus-visible:ring-indigo-500/20"
             />
@@ -438,19 +469,35 @@ const NewJobPage = () => {
             <textarea
               id="qualifications"
               name="qualifications"
+              required
               placeholder="List the must-have skills, experience, and tools for this position."
               className="min-h-[104px] w-full resize-y rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-[15px] text-white outline-none transition-colors placeholder:text-zinc-500 focus-visible:border-indigo-500/60 focus-visible:ring-2 focus-visible:ring-indigo-500/20"
             />
           </div>
         </section>
-        <section>
+        <section className="space-y-4">
+          {status ? (
+            <p
+              role={status.type === "error" ? "alert" : "status"}
+              className={cn(
+                "rounded-xl border px-4 py-3 text-sm",
+                status.type === "error"
+                  ? "border-red-500/30 bg-red-500/10 text-red-200"
+                  : "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
+              )}
+            >
+              {status.message}
+            </p>
+          ) : null}
+
           <Button
             type="submit"
             form="new-job-form"
+            disabled={isSubmitting}
             className="h-10 w-full rounded-full bg-indigo-600 px-7 text-[15px] font-semibold text-white hover:bg-indigo-500 sm:w-auto [&_svg:not([class*='size-'])]:size-4"
           >
-            Publish Job
-            <ArrowRight aria-hidden="true" />
+            {isSubmitting ? "Publishing..." : "Publish Job"}
+            {isSubmitting ? null : <ArrowRight aria-hidden="true" />}
           </Button>
         </section>
       </form>
