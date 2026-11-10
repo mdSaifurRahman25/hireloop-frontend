@@ -6,6 +6,7 @@ import {
   Briefcase,
   ChevronRight,
   Code2,
+  Eye,
   Globe,
   Headset,
   MapPin,
@@ -20,7 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "cn";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { getJobs, type JobDocument } from "@/lib/api/jobs";
 import { DeleteJobDialog } from "@/app/components/DeleteJobDialog";
 
@@ -97,7 +98,7 @@ const resolveDepartment = (category: string) =>
 // Applicants only join the table on xl screens, status on lg, so the remaining
 // columns keep their design proportions instead of squeezing the job titles.
 const columns =
-  "md:grid-cols-[minmax(0,3.3fr)_minmax(0,2.4fr)_76px_minmax(0,1.65fr)_minmax(0,1.35fr)_160px] lg:grid-cols-[minmax(0,3.3fr)_minmax(0,2.4fr)_76px_minmax(0,1.65fr)_72px_minmax(0,1.35fr)_160px] xl:grid-cols-[minmax(0,3.3fr)_minmax(0,2.4fr)_76px_minmax(0,1.65fr)_minmax(0,1.5fr)_72px_minmax(0,1.35fr)_160px]";
+  "md:grid-cols-[minmax(0,3.3fr)_minmax(0,2.4fr)_76px_minmax(0,1.65fr)_minmax(0,1.35fr)_180px] lg:grid-cols-[minmax(0,3.3fr)_minmax(0,2.4fr)_76px_minmax(0,1.65fr)_72px_minmax(0,1.35fr)_180px] xl:grid-cols-[minmax(0,3.3fr)_minmax(0,2.4fr)_76px_minmax(0,1.65fr)_minmax(0,1.5fr)_72px_minmax(0,1.35fr)_180px]";
 
 const mobileLabel =
   "mb-1 block text-[10px] font-semibold tracking-[0.08em] text-zinc-500 uppercase md:hidden";
@@ -414,12 +415,22 @@ async function JobsTable() {
                 </div>
 
                 <div className="col-span-2 flex items-center gap-2 md:col-span-1 md:justify-end">
-                  <Button
-                    variant="ghost"
-                    className="h-8 rounded-lg bg-indigo-600 px-3 text-xs font-medium text-white hover:bg-indigo-500"
+                  <Link
+                    href={`/jobs/${job.id}`}
+                    aria-label={`View ${job.title}`}
+                    title="View job details"
+                    className="flex h-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-2.5 text-zinc-300 transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    <Eye aria-hidden="true" className="size-3.5" />
+                  </Link>
+                  <Link
+                    href={`/dashboard/recruiter/jobs/edit?id=${job.id}`}
+                    aria-label={`Edit ${job.title}`}
+                    title="Edit job"
+                    className="flex h-8 items-center justify-center rounded-lg bg-indigo-600 px-3 text-xs font-medium text-white transition-colors hover:bg-indigo-500"
                   >
                     <Pencil aria-hidden="true" className="size-3.5" />
-                  </Button>
+                  </Link>
                     <DeleteJobDialog job={job} />
                   <button
                     type="button"

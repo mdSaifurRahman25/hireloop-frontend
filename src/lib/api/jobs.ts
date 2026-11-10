@@ -19,6 +19,8 @@ export type JobDocument = {
   maxSalary?: number | null;
   frequency?: string | null;
   salaryFrequency?: string | null;
+  responsibilities?: string | null;
+  qualifications?: string | null;
   createdAt?: string | null;
 };
 
@@ -36,6 +38,18 @@ export const getJobs = async (): Promise<JobDocument[]> => {
 
   if (!res.ok) {
     throw new Error(`GET /jobs failed with status ${res.status}`);
+  }
+
+  return res.json();
+};
+
+export const getJobById = async (id: string): Promise<JobDocument> => {
+  const res = await fetch(`${BASE_URI}/jobs/${id}`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error(`GET /jobs/${id} failed with status ${res.status}`);
   }
 
   return res.json();

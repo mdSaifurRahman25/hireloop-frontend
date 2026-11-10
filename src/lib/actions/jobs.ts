@@ -30,6 +30,19 @@ export const createJob = async (
   return result as CreateJobResponse;
 };
 
+export const updateJob = async (jobId: string, data: JobPayload) => {
+  const response = await fetch(`${BASE_URI}/jobs/${jobId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(result?.message ?? `Failed to update job (HTTP ${response.status})`);
+  }
+  return result;
+};
+
 export const deleteJob = async (jobId: string) => {
   const response = await fetch(`${BASE_URI}/jobs/${jobId}`, {
     method: 'DELETE', 

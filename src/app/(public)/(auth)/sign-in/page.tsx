@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import AuthShell from "@/components/auth/auth-shell";
-import AuthToggle from "@/components/auth/auth-toggle";
 import SignInForm from "@/components/auth/sign-in-form";
 
 export const metadata: Metadata = {
@@ -12,9 +11,7 @@ export const metadata: Metadata = {
 const SignInPage = () => {
   return (
     <AuthShell>
-      <AuthToggle active="sign-in" />
-
-      <div className="mt-6">
+      <div>
         <h1 className="text-2xl font-semibold tracking-tight text-white">
           Welcome back
         </h1>
