@@ -26,6 +26,7 @@ import { toast } from "@/components/ui/toast";
 import type { JobDocument } from "@/types";
 import { getJobById } from "@/lib/api/jobs";
 import { formatCompensation, formatDeadline } from "@/lib/utils/formatters";
+import { useSession } from "@/lib/auth-client";
 
 const CATEGORY_SKILLS: Record<
   string,
@@ -223,9 +224,15 @@ function JobDetailsContent({ jobId }: { jobId: string }) {
   const [fetchedJobId, setFetchedJobId] = useState<string | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
-  const [applicantName, setApplicantName] = useState("");
-  const [applicantEmail, setApplicantEmail] = useState("");
+  const [applicantNameInput, setApplicantNameInput] = useState<string | null>(null);
+  const [applicantEmailInput, setApplicantEmailInput] = useState<string | null>(null);
   const [hasApplied, setHasApplied] = useState(false);
+
+  const { data: session, isPending } = useSession();
+  const user = session?.user;
+
+  const applicantName = applicantNameInput ?? user?.name ?? "";
+  const applicantEmail = applicantEmailInput ?? user?.email ?? "";
 
   useEffect(() => {
     let isMounted = true;
@@ -304,6 +311,7 @@ function JobDetailsContent({ jobId }: { jobId: string }) {
     e.preventDefault();
     setHasApplied(true);
     setIsApplyModalOpen(false);
+
     toast.add({
       title: "Application Submitted!",
       description: `Your application for ${title} at ${company} has been received.`,
@@ -678,6 +686,25 @@ function JobDetailsContent({ jobId }: { jobId: string }) {
               onSubmit={handleApply}
               className="mt-4 sm:mt-5 space-y-3.5 sm:space-y-4"
             >
+              {user ? (
+                <div className="flex items-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-3.5 py-2.5 text-xs text-indigo-300">
+                  <CheckCircle2 className="size-4 shrink-0 text-indigo-400" />
+                  <span>
+                    Logged in as <strong className="text-white">{user.name || user.email}</strong>. Details auto-filled.
+                  </span>
+                </div>
+              ) : !isPending ? (
+                <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] px-3.5 py-2.5 text-xs text-zinc-400">
+                  <span>Applying as a guest.</span>
+                  <Link
+                    href="/sign-in"
+                    className="font-medium text-indigo-400 hover:text-indigo-300"
+                  >
+                    Sign in to auto-fill
+                  </Link>
+                </div>
+              ) : null}
+
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
                   Your Full Name
@@ -686,7 +713,7 @@ function JobDetailsContent({ jobId }: { jobId: string }) {
                   type="text"
                   required
                   value={applicantName}
-                  onChange={(e) => setApplicantName(e.target.value)}
+                  onChange={(e) => setApplicantNameInput(e.target.value)}
                   placeholder="e.g. Alex Morgan"
                   className="mt-1.5 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-indigo-500"
                 />
@@ -700,7 +727,7 @@ function JobDetailsContent({ jobId }: { jobId: string }) {
                   type="email"
                   required
                   value={applicantEmail}
-                  onChange={(e) => setApplicantEmail(e.target.value)}
+                  onChange={(e) => setApplicantEmailInput(e.target.value)}
                   placeholder="alex@example.com"
                   className="mt-1.5 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-indigo-500"
                 />

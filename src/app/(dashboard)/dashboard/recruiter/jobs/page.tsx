@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { connection } from "next/server";
 import type { LucideIcon } from "lucide-react";
 import {
   Boxes,
@@ -201,6 +202,7 @@ function ErrorState({ message }: { message: string }) {
 }
 
 async function JobsTable() {
+  await connection();
   let jobs: JobPost[];
 
   try {
