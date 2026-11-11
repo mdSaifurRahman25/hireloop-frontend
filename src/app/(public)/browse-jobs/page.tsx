@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useId, useState } from "react";
+import { Suspense, useCallback, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -211,6 +211,7 @@ function BrowseJobsContent() {
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [bookmarkedIds, setBookmarkedIds] = useState<Record<string, boolean>>({});
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
 
   // Sync search input if URL qParam changes externally (e.g. browser back/forward or clear)
   if (qParam !== prevQParam) {
@@ -261,6 +262,36 @@ function BrowseJobsContent() {
 
     return () => clearTimeout(timer);
   }, [searchInput, qParam, updateParams]);
+
+  // Close sort dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    if (!sortDropdownOpen) return;
+
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (
+        sortDropdownRef.current &&
+        !sortDropdownRef.current.contains(event.target as Node)
+      ) {
+        setSortDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSortDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [sortDropdownOpen]);
 
   // Fetch jobs from backend based on URL query parameters
   useEffect(() => {
@@ -673,25 +704,38 @@ function BrowseJobsContent() {
                 Found {totalJobs.toLocaleString()} Professional Jobs
               </h2>
 
-              <div className="relative">
+              <div ref={sortDropdownRef} className="relative">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-zinc-400">Sort by:</span>
                   <button
                     type="button"
-                    onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+                    onClick={() => setSortDropdownOpen((prev) => !prev)}
+                    aria-expanded={sortDropdownOpen}
+                    aria-haspopup="listbox"
                     className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#141414] px-3 py-1.5 text-xs text-zinc-200 transition-colors hover:border-white/20"
                   >
                     <span>{sortParam}</span>
-                    <ChevronDown className="size-3.5 text-zinc-400" />
+                    <ChevronDown
+                      className={cn(
+                        "size-3.5 text-zinc-400 transition-transform duration-200",
+                        sortDropdownOpen && "rotate-180",
+                      )}
+                    />
                   </button>
                 </div>
 
                 {sortDropdownOpen && (
-                  <div className="absolute right-0 z-20 mt-1.5 w-40 overflow-hidden rounded-xl border border-white/10 bg-[#161616] py-1 shadow-2xl backdrop-blur-md">
+                  <div
+                    role="listbox"
+                    aria-label="Sort options"
+                    className="absolute right-0 z-20 mt-1.5 w-40 overflow-hidden rounded-xl border border-white/10 bg-[#161616] py-1 shadow-2xl backdrop-blur-md"
+                  >
                     {SORT_OPTIONS.map((option) => (
                       <button
                         key={option}
                         type="button"
+                        role="option"
+                        aria-selected={sortParam === option}
                         onClick={() => {
                           updateParams({ sort: option === "Most Recent" ? null : option });
                           setSortDropdownOpen(false);
