@@ -303,7 +303,7 @@ function JobDetailsContent({ jobId }: { jobId: string }) {
         {/* Responsive Breadcrumb Navigation */}
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-zinc-500 overflow-hidden">
           <Link
-            href="/jobs"
+            href="/browse-jobs"
             className="inline-flex items-center gap-1.5 shrink-0 transition-colors hover:text-zinc-200"
           >
             <ArrowLeft className="size-3.5" />

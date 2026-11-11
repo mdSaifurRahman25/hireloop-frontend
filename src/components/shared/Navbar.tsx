@@ -32,7 +32,7 @@ const Navbar = () => {
   //   console.log(user, "from navbar user.");
 
   const navLinks = [
-    { label: "Browse Jobs", href: "/jobs" },
+    { label: "Browse Jobs", href: "/browse-jobs" },
     { label: "Company", href: "/company" },
     { label: "Pricing", href: "/pricing" },
     ...(user

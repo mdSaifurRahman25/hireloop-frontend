@@ -63,7 +63,7 @@ const HeroSection = () => {
           </p>
 
           <form
-            action="/jobs"
+            action="/browse-jobs"
             method="get"
             className="mx-auto mt-8 w-full max-w-[800px]"
           >
@@ -122,7 +122,7 @@ const HeroSection = () => {
             {trendingPositions.map((position) => (
               <Link
                 key={position}
-                href={`/jobs?q=${encodeURIComponent(position)}`}
+                href={`/browse-jobs?q=${encodeURIComponent(position)}`}
                 className="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-[11px] text-zinc-300 transition-colors hover:border-white/25 hover:text-white"
               >
                 {position}

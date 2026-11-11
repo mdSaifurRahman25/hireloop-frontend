@@ -86,6 +86,7 @@ export interface JobItem {
   location: string;
   salary: string;
   type: string;
+  category?: string;
   workMode?: WorkMode;
   level?: string;
   badge?: {
@@ -146,4 +147,14 @@ export type DeleteJobResponse = {
   acknowledged?: boolean;
   deletedCount?: number;
   message?: string;
+};
+
+export type BrowseJobsResponse = {
+  jobs: JobDocument[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  typeCounts?: Record<string, number>;
+  categoryCounts?: Record<string, number>;
 };

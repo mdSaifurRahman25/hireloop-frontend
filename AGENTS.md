@@ -35,7 +35,7 @@ Full-stack recruitment and job portal application consisting of two independent 
 - **Database:** MongoDB connected via `MONGODB_URI` (`hireloop` database). Collections: `jobs`, `users`.
 - **API Endpoints:**
   - `GET /` — Service health check.
-  - `GET /jobs` — Returns all jobs, enriched with recruiter user info via MongoDB aggregation `$lookup`.
+  - `GET /jobs` — Returns jobs with support for search query `q` (regex text search on title, company, location, category, responsibilities, qualifications), single-select `type`, `category`, `salaryRange` / `minSalary` / `maxSalary`, `sort` ("Highest Salary", "Full-time First", "Most Recent"), and pagination (`page`, `limit`). Enriches response with `total`, `typeCounts`, and `categoryCounts` via MongoDB `$group` aggregation, while maintaining backward-compatible plain array response when no query parameters are provided.
   - `GET /jobs/:id` — Fetches a single job post by MongoDB `ObjectId`.
   - `POST /new` — Creates a new job posting with recruiter validation.
   - `PUT /jobs/:id` — Updates existing job details (`title`, `companyName`, `category`, `jobType`, `isRemote`, `location`, `deadline`, `minSalary`, `maxSalary`, `frequency`, `responsibilities`, `qualifications`, `updatedAt`).
@@ -61,8 +61,9 @@ Full-stack recruitment and job portal application consisting of two independent 
   - `/dashboard/recruiter/jobs/edit/[id]`: Dynamic route wrapper for path-based edit URLs.
   - Actions & API: `src/lib/actions/jobs.ts` (`updateJob`), `src/lib/api/jobs.ts` (`getJobById`, `JobDocument` type definitions).
 - **Public Job Browsing & Details:**
-  - `/jobs` (`src/app/(public)/jobs/page.tsx`): Responsive browse jobs page with search input, mobile-toggleable filter sidebar, pagination controls, bookmark toggle, and card links to `/jobs/[id]`.
-  - `/jobs/[id]` (`src/app/(public)/jobs/[id]/page.tsx`): Job details page cloned from design specifications. Includes role header, verified badge, stats grid (salary, location, type, experience), job description, responsibilities list, requirements badge cluster, benefits grid, and company overview card with logo/image and website link. Wrapped in `<Suspense>`.
+  - `/browse-jobs` (`src/app/(public)/browse-jobs/page.tsx`): Responsive browse jobs page synchronized with URL search params (`useSearchParams`, `useRouter`, `usePathname`). Features ~300ms debounced search (`?q=...`), single-select radio button filters for Job Type (`?type=...`), Industry / Category (`?category=...`), and Salary Range (`?salary=...`), dynamic total found job count and filter category/type counts fetched from backend, sorting dropdown (`?sort=...`), and URL-synced pagination (`?page=...`). Wrapped in `<Suspense>`.
+  - `/browse-jobs/[id]` (`src/app/(public)/browse-jobs/[id]/page.tsx`): Job details page cloned from design specifications. Includes role header, verified badge, stats grid (salary, location, type, experience), job description, responsibilities list, requirements badge cluster, benefits grid, and company overview card with logo/image and website link. Wrapped in `<Suspense>`.
+  - Next.js permanent redirects configured in `next.config.ts` from legacy `/jobs` and `/jobs/:id` to `/browse-jobs` and `/browse-jobs/:id`.
 - **Shared Layouts & Navigation:**
   - Public Navbar (`src/components/shared/Navbar.tsx`) and Dashboard Sidebar (`src/components/shared/DashboardSidebar.tsx`) wrapped in `<Suspense>` to eliminate Next.js 16 runtime prerender errors.
 

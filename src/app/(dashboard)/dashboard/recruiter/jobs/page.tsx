@@ -339,7 +339,7 @@ async function JobsTable() {
 
                 <div className="col-span-2 flex items-center gap-2 md:col-span-1 md:justify-end">
                   <Link
-                    href={`/jobs/${job.id}`}
+                    href={`/browse-jobs/${job.id}`}
                     aria-label={`View ${job.title}`}
                     title="View job details"
                     className="flex h-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-2.5 text-zinc-300 transition-colors hover:bg-white/10 hover:text-white"
