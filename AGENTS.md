@@ -32,7 +32,7 @@ Full-stack recruitment and job portal application consisting of two independent 
 
 ### Backend (`hireloop-backend/`)
 - **Technology:** Node.js, Express 5, MongoDB native driver, dotenv, cors, ES modules (`"type": "module"`).
-- **Database:** MongoDB connected via `MONGODB_URI` (`hireloop` database). Collections: `jobs`, `users`.
+- **Database:** MongoDB connected via `MONGODB_URI` (`hireloop` database). Collections: `jobs`, `users`, `applications`.
 - **API Endpoints:**
   - `GET /` — Service health check.
   - `GET /jobs` — Returns jobs with support for search query `q` (regex text search on title, company, location, category, responsibilities, qualifications), single-select `type`, `category`, `salaryRange` / `minSalary` / `maxSalary`, `sort` ("Highest Salary", "Full-time First", "Most Recent"), and pagination (`page`, `limit`). Enriches response with `total`, `typeCounts`, and `categoryCounts` via MongoDB `$group` aggregation, while maintaining backward-compatible plain array response when no query parameters are provided.
@@ -40,12 +40,19 @@ Full-stack recruitment and job portal application consisting of two independent 
   - `POST /new` — Creates a new job posting with recruiter validation.
   - `PUT /jobs/:id` — Updates existing job details (`title`, `companyName`, `category`, `jobType`, `isRemote`, `location`, `deadline`, `minSalary`, `maxSalary`, `frequency`, `responsibilities`, `qualifications`, `updatedAt`).
   - `DELETE /jobs/:id` — Deletes a job document by `ObjectId`.
+  - `POST /applications` — Inserts job applications into MongoDB `applications` collection with validation.
+  - `GET /applications` — Fetches applications with optional filtering by `email` (case-insensitive regex) and `jobId`, sorted by `appliedAt: -1, _id: -1`.
   - `POST /users` — Inserts or updates user records in MongoDB.
   - `GET /users` — Retrieves user lists.
 
 ### Frontend (`hireloop-frontend/`)
 - **Technology:** Next.js 16.4.5 (App Router), React 19, Tailwind CSS v4 (`@theme inline` in `src/app/globals.css`), shadcn/ui (`base-nova` style, Lucide icons), better-auth.
 - **Path Alias:** `@/*` maps to `src/*`.
+- **Centralized TypeScript Types (`src/types/`):**
+  - `src/types/job.ts`: Job postings, responses, categories, filter payloads, and view models (`JobDocument`, `JobPost`, `JobItem`, `JobDetails`, `BrowseJobsResponse`).
+  - `src/types/auth.ts`: Authentication, user roles (`UserRole`, `DashboardRole`, `DashboardMenuItem`).
+  - `src/types/application.ts`: Seeker application models (`ApplicationStatus`, `ApplicationIconType`, `JobApplicationPayload`, `JobApplicationResponse`, `JobApplicationDocument`, `ApplicationItem`, `ApplicationMetrics`).
+  - `src/types/index.ts`: Central barrel export for all types across the application.
 - **Authentication:**
   - Config: Server at `src/lib/auth.ts`, client at `src/lib/auth-client.ts`, handler at `src/app/api/auth/[...all]/route.ts`.
   - `/sign-in` (`src/app/(public)/(auth)/sign-in/page.tsx`): Clean sign-in page without redundant top toggle or role selector. Authenticates directly via email/password or Google OAuth.
@@ -53,7 +60,7 @@ Full-stack recruitment and job portal application consisting of two independent 
   - Layout & Shell: `<AuthShell>` provides frosted-glass container with ambient background glow.
 - **Recruiter Job Management:**
   - `/dashboard/recruiter/jobs`: Full-featured recruiter management dashboard. Responsive table for desktop and responsive cards for mobile. Shows status, candidate count, compensation, deadline, and action buttons.
-  - **View Action:** Navigates directly to the public job details page (`/jobs/[id]`).
+  - **View Action:** Navigates directly to the public job details page (`/browse-jobs/[id]`).
   - **Edit Action:** Navigates to `/dashboard/recruiter/jobs/edit?id=[id]`.
   - **Delete Action:** `DeleteJobDialog` component with optimistic state removal, backend `DELETE /jobs/:id` execution, toast feedback, and server refresh.
 - **Job Edit Workflow:**
@@ -62,8 +69,17 @@ Full-stack recruitment and job portal application consisting of two independent 
   - Actions & API: `src/lib/actions/jobs.ts` (`updateJob`), `src/lib/api/jobs.ts` (`getJobById`, `JobDocument` type definitions).
 - **Public Job Browsing & Details:**
   - `/browse-jobs` (`src/app/(public)/browse-jobs/page.tsx`): Responsive browse jobs page synchronized with URL search params (`useSearchParams`, `useRouter`, `usePathname`). Features ~300ms debounced search (`?q=...`), single-select radio button filters for Job Type (`?type=...`), Industry / Category (`?category=...`), and Salary Range (`?salary=...`), dynamic total found job count and filter category/type counts fetched from backend, sorting dropdown (`?sort=...`), and URL-synced pagination (`?page=...`). Wrapped in `<Suspense>`.
-  - `/browse-jobs/[id]` (`src/app/(public)/browse-jobs/[id]/page.tsx`): Job details page cloned from design specifications. Includes role header, verified badge, stats grid (salary, location, type, experience), job description, responsibilities list, requirements badge cluster, benefits grid, and company overview card with logo/image and website link. Wrapped in `<Suspense>`.
+  - `/browse-jobs/[id]` (`src/app/(public)/browse-jobs/[id]/page.tsx`): Job details page cloned from design specifications. Modularized using reusable components in `src/components/jobs/details/` (`JobHeader`, `JobQuickInfo`, `JobCompanyOverview`, `JobApplyModal`, `JobDetailsSkeleton`, `JobNotFound`, `constants`). Includes role header, verified badge, stats grid, responsibilities list, requirements badge cluster, benefits grid, and company card with application modal. Wrapped in `<Suspense>`.
   - Next.js permanent redirects configured in `next.config.ts` from legacy `/jobs` and `/jobs/:id` to `/browse-jobs` and `/browse-jobs/:id`.
+- **Seeker Application Management:**
+  - `/dashboard/seeker/applications` (`src/app/(dashboard)/dashboard/seeker/applications/page.tsx`): Full-featured Seeker Application Management dashboard cloned from design specs and connected to real backend applications (`GET /applications`). Modularized using reusable components in `src/components/seeker/applications/`:
+    - `JobRoleIcon.tsx` — Role category icon renderer (`code`, `design`, `data`, `cloud`, `ai`, `general`).
+    - `StatusBadge.tsx` — Status pills (`Applied`, `Review`, `Shortlisted`, `Rejected`, `Offered`).
+    - `ApplicationStatCards.tsx` — Dynamic metrics computed from real database data (`Total Applied`, `Shortlisted`, `Interviews`, `Success Rate`).
+    - `ApplicationToolbar.tsx` — Live search input, Active/Archived segmented pill toggle, and Export PDF button.
+    - `ApplicationTable.tsx` — Desktop table and mobile responsive card views with empty states and loading skeletons.
+    - `ApplicationPagination.tsx` — Accessible page navigation.
+    - `ApplicationDetailModal.tsx` — Modal popup showing complete submission details and job link.
 - **Shared Layouts & Navigation:**
   - Public Navbar (`src/components/shared/Navbar.tsx`) and Dashboard Sidebar (`src/components/shared/DashboardSidebar.tsx`) wrapped in `<Suspense>` to eliminate Next.js 16 runtime prerender errors.
 
