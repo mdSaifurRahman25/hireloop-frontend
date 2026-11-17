@@ -33,6 +33,8 @@ export interface JobApplicationPayload {
   portfolioUrl?: string;
   appliedAt: string;
   status?: ApplicationStatus;
+  userId?: string;
+  applicantId?: string;
 }
 
 /**

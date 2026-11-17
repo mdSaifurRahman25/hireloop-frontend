@@ -48,34 +48,87 @@ function CheckoutContent() {
     );
   }, [selectedPlanId]);
 
-  const handleProceedToPayment = () => {
-    const customerEmail = user?.email || guestEmail.trim();
+ const handleProceedToPayment = async () => {
+  const customerEmail = user?.email || guestEmail.trim();
+  const customerName = user?.name || guestName.trim();
 
-    if (!customerEmail) {
-      toast.add({
-        title: "Email Required",
-        description: "Please enter your email address to receive your receipt and access.",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
+  if (!customerEmail) {
     toast.add({
-      title: "Connecting to Stripe",
+      title: "Email Required",
       description:
-        "Preparing your secure Stripe checkout session. You will be redirected shortly...",
+        "Please enter your email address to receive your receipt and access.",
+    });
+    return;
+  }
+
+  if (!user && !customerName) {
+    toast.add({
+      title: "Name Required",
+      description: "Please enter your full name.",
+    });
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+  
+    const paymentData = {
+      planId: currentPlan.id,
+      planName: currentPlan.name,
+      billingCycle,
+
+      customer: {
+        name: customerName,
+        email: customerEmail,
+      },
+
+      metadata: {
+        source: "hireloop_web",
+        userId: user?.id || null,
+      },
+    };
+    console.log(paymentData);
+
+    const response = await fetch("/api/checkout_sessions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(paymentData),
     });
 
-    // Simulated Stripe checkout bridge (ready for POST /api/checkout/stripe session)
-    setTimeout(() => {
-      setIsSubmitting(false);
-      toast.add({
-        title: "Stripe Ready",
-        description:
-          "Payment flow initialized successfully. We will connect the live Stripe secret key and webhook next.",
-      });
-    }, 1800);
-  };
+    const result = await response.json();
+
+    console.log(result);
+
+    if (!response.ok) {
+      throw new Error(
+        result.error || result.message || "Unable to initialize checkout."
+      );
+    }
+
+    if (!result.checkoutUrl) {
+      throw new Error("Stripe checkout URL not found.");
+    }
+
+
+    window.location.href = result.checkoutUrl;
+
+  } catch (error) {
+    console.error("Stripe checkout error:", error);
+
+    toast.add({
+      title: "Payment Initialization Failed",
+      description:
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again.",
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -149,7 +202,21 @@ function CheckoutContent() {
   );
 }
 
-export default function CheckoutPage() {
+interface CheckoutPageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function CheckoutPage({
+  searchParams,
+}: CheckoutPageProps) {
+   const { canceled } = await searchParams
+
+  if (canceled) {
+    console.log(
+      'Order canceled -- continue to shop around and check out when you\'re ready.'
+    )
+  }
+
   return (
     <Suspense fallback={<CheckoutSkeleton />}>
       <CheckoutContent />

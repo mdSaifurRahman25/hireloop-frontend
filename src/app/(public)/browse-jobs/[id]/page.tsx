@@ -22,7 +22,7 @@ import {
   CATEGORY_SKILLS,
   DEFAULT_BENEFITS,
 } from "@/components/jobs/details";
-import applyToJob from "@/lib/actions/applications";
+import { applyToJob, getApplicationsCount } from "@/lib/actions/applications";
 
 function JobDetailsContent({ jobId }: { jobId: string }) {
   const [job, setJob] = useState<JobDocument | null>(null);
@@ -44,6 +44,31 @@ function JobDetailsContent({ jobId }: { jobId: string }) {
 
   const applicantName = applicantNameInput ?? user?.name ?? "";
   const applicantEmail = applicantEmailInput ?? user?.email ?? "";
+
+  const [applicationCount, setApplicationCount] = useState<number | null>(null);
+  const [isCheckingLimit, setIsCheckingLimit] = useState(false);
+
+  // Fetch initial application count for the logged in user using backend countDocument endpoint
+  useEffect(() => {
+    let isMounted = true;
+    if (user?.id || user?.email) {
+      getApplicationsCount({
+        applicantId: user?.id,
+        email: user?.email,
+      })
+        .then((count) => {
+          if (isMounted) {
+            setApplicationCount(count);
+          }
+        })
+        .catch((err) => {
+          console.error("Could not fetch user application count:", err);
+        });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, user?.email]);
 
   useEffect(() => {
     let isMounted = true;
@@ -121,20 +146,85 @@ function JobDetailsContent({ jobId }: { jobId: string }) {
 
   const description = `${company} is actively seeking a qualified and motivated ${title} to join their team. This ${jobType.toLowerCase()} role in ${location} offers an exciting opportunity to collaborate with industry professionals and make a direct impact.`;
 
-  // Check authentication before opening the application modal
-  const handleApplyClick = () => {
-    if (isPending) return;
+  // Check application limit (10 free applications) before allowing apply
+  const checkApplicationLimitAndProceed = async (): Promise<boolean> => {
+    if (!session?.user) {
+      router.push("/sign-in");
+      return false;
+    }
+
+    if (user?.role && user.role !== "seeker") {
+      toast.add({
+        title: "Application Restricted",
+        description: "Only Job Seeker accounts can submit job applications.",
+      });
+      return false;
+    }
+
+    // Fast-path if cached count is already >= 10
+    if (applicationCount !== null && applicationCount >= 10) {
+      setIsApplyModalOpen(false);
+      toast.add({
+        title: "Application Limit Reached",
+        description:
+          "You have reached your limit of 10 free applications. Please purchase a membership package to continue applying for more jobs.",
+      });
+      router.push("/checkout");
+      return false;
+    }
+
+    try {
+      setIsCheckingLimit(true);
+      // Fetch fresh count from backend countDocument endpoint (supports both applicantId and email)
+      const count = await getApplicationsCount({
+        applicantId: user?.id,
+        email: user?.email,
+      });
+      setApplicationCount(count);
+
+      if (count >= 10) {
+        setIsApplyModalOpen(false);
+        toast.add({
+          title: "Application Limit Reached",
+          description:
+            "You have reached your limit of 10 free applications. Please purchase a membership package to continue applying for more jobs.",
+        });
+        router.push("/checkout");
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      console.error("Failed to verify application count:", err);
+      // Fallback: don't block user if count endpoint has a transient network error
+      return true;
+    } finally {
+      setIsCheckingLimit(false);
+    }
+  };
+
+  // Check authentication & limit before opening the application modal
+  const handleApplyClick = async () => {
+    if (isPending || isCheckingLimit) return;
 
     if (!session?.user) {
       router.push("/sign-in");
       return;
     }
 
+    const canApply = await checkApplicationLimitAndProceed();
+    if (!canApply) return;
+
     setIsApplyModalOpen(true);
   };
 
   const handleApply = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Read form values synchronously before any asynchronous operations
+    const formElement = e.currentTarget;
+    const formData = new FormData(formElement);
+    const data = Object.fromEntries(formData.entries());
 
     if (isPending) return;
 
@@ -144,16 +234,11 @@ function JobDetailsContent({ jobId }: { jobId: string }) {
       return;
     }
 
-    if (user?.role && user.role !== "seeker") {
-      toast.add({
-        title: "Application Restricted",
-        description: "Only Job Seeker accounts can submit job applications.",
-      });
+    const canApply = await checkApplicationLimitAndProceed();
+    if (!canApply) {
+      setIsApplyModalOpen(false);
       return;
     }
-
-    const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
 
     const application: JobApplicationPayload = {
       jobId,
@@ -165,6 +250,8 @@ function JobDetailsContent({ jobId }: { jobId: string }) {
       applicantEmail: String(data.email || applicantEmail).trim(),
       portfolioUrl: data.portfolio ? String(data.portfolio).trim() : undefined,
       appliedAt: new Date().toISOString(),
+      userId: user?.id,
+      applicantId: user?.id,
     };
 
     try {
@@ -175,6 +262,7 @@ function JobDetailsContent({ jobId }: { jobId: string }) {
         console.log("Application submitted successfully.");
         setHasApplied(true);
         setIsApplyModalOpen(false);
+        setApplicationCount((prev) => (prev !== null ? prev + 1 : 1));
         toast.add({
           title: "Application Submitted!",
           description: `Your application for ${title} at ${company} has been received.`,
@@ -228,7 +316,7 @@ function JobDetailsContent({ jobId }: { jobId: string }) {
           onToggleBookmark={handleToggleBookmark}
           onApplyClick={handleApplyClick}
           hasApplied={hasApplied}
-          isPending={isPending}
+          isPending={isPending || isCheckingLimit}
         />
 
         {/* 2. Quick Info Cards Grid */}
